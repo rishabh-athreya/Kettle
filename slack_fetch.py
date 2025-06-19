@@ -43,7 +43,7 @@ def messages_stale(messages, minutes=5):
     now = datetime.now(timezone.utc)
     return (now - latest_time) > timedelta(minutes=minutes)
 
-def save_messages(messages, path="messages.json"):
+def save_messages(messages, path="json/messages.json"):
     # Only keep messages not sent by the bot itself
     filtered = [m for m in messages if m.get("user") != BOT_USER_ID]
     formatted = {"messages": [{"text": m.get("text", ""), "user": m.get("user", ""), "ts": m.get("ts", "")} for m in filtered]}

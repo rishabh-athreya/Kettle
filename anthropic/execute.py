@@ -1,13 +1,13 @@
 import os
 import json
-from keys import PERPLEXITY_API_KEY
+from keys import ANTHROPIC_API_KEY
 import tempfile
 import subprocess
 import requests
 
 PHASE_ORDER = ["project_setup", "dependency_installation", "feature_implementation"]
 
-PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
+ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 
 def load_phased_tasks(filepath="json/phased_tasks.json"):
     with open(filepath, "r") as f:
@@ -49,19 +49,21 @@ Here are the tasks to perform:
 {task_list}
 """
 
-def call_perplexity(prompt):
+def call_claude(prompt):
     headers = {
-        "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
-        "Content-Type": "application/json"
+        "x-api-key": ANTHROPIC_API_KEY,
+        "Content-Type": "application/json",
+        "anthropic-version": "2023-06-01"
     }
     body = {
-        "model": "sonar-pro",
+        "model": "claude-3-5-sonnet-20241022",
+        "max_tokens": 8000,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.3
     }
-    response = requests.post(PERPLEXITY_API_URL, headers=headers, json=body)
+    response = requests.post(ANTHROPIC_API_URL, headers=headers, json=body)
     response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"]
+    return response.json()["content"][0]["text"]
 
 def clean_code_blocks(response: str) -> str:
     if "```python" in response:
@@ -95,7 +97,7 @@ def main():
     tasks = load_phased_tasks()
     ordered_tasks = sort_tasks_by_phase(tasks)
     prompt = build_prompt(ordered_tasks)
-    script = clean_code_blocks(call_perplexity(prompt))
+    script = clean_code_blocks(call_claude(prompt))
 
     with open("script.py", "w") as f:
         f.write(script)
@@ -106,4 +108,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main() 
