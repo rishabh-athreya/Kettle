@@ -1,0 +1,29 @@
+{
+  "messages": [
+    {
+      "text": "I want there to be a folder with logs from games",
+      "user": "U09236GF7T4",
+      "ts": "1750284084.484939"
+    },
+    {
+      "text": "Make a website hosted on local host to play tic tac toe",
+      "user": "U09236GF7T4",
+      "ts": "1750284067.976279"
+    },
+    {
+      "text": "has renamed the channel from \"new-channel\" to \"build-shit-fast\"",
+      "user": "U0923L7G13N",
+      "ts": "1750278417.564279"
+    },
+    {
+      "text": "<@U09236GF7T4> has joined the channel",
+      "user": "U09236GF7T4",
+      "ts": "1750278359.409859"
+    },
+    {
+      "text": "<@U0923L7G13N> has joined the channel",
+      "user": "U0923L7G13N",
+      "ts": "1750278112.852269"
+    }
+  ]
+}
