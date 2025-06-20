@@ -1,7 +1,7 @@
 [
   {
-    "task": "Implement a Flappy Bird game",
-    "source": "Can you create a flappy bird game",
+    "task": "Add a logs.txt file to track results for the tic tac toe game",
+    "source": "can u add a logs.txt to track results for the tic tac toe game",
     "phase": "feature_implementation"
   }
 ]

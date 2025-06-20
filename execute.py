@@ -5,8 +5,10 @@ import tempfile
 import subprocess
 import requests
 from prompts import execute_tasks_prompt
-from project_manager import ProjectManager
-from embedding_index import EmbeddingIndex
+from project_matcher import find_closest_project, save_project_embedding
+import glob
+import time
+import re
 
 PHASE_ORDER = ["project_setup", "dependency_installation", "feature_implementation"]
 
@@ -61,33 +63,58 @@ def validate_script(script_code):
         if imp not in script_code:
             raise ValueError(f"🚨 Missing import: {imp}")
 
+def gather_code_files(project_folder):
+    print(f"[DEBUG] Gathering files from: {project_folder}")
+    code_files = []
+    for root, dirs, files in os.walk(os.path.expanduser(project_folder)):
+        # Skip any venv directories
+        dirs[:] = [d for d in dirs if d != "venv"]
+        for file in files:
+            if file.endswith(".py") or file.endswith(".json"):
+                code_files.append(os.path.join(root, file))
+    files_content = {}
+    for f in code_files:
+        try:
+            with open(f, "r") as file:
+                files_content[os.path.relpath(f, project_folder)] = file.read()
+        except Exception as e:
+            print(f"[DEBUG] Could not read {f}: {e}")
+            continue
+    print(f"[DEBUG] Total files gathered: {len(files_content)}")
+    return files_content
+
+def slugify(text):
+    return re.sub(r'[^a-zA-Z0-9_]+', '_', text.strip().lower())[:30]
+
+def get_latest_project_folder(work_dir="~/Desktop/Work"):
+    work_dir = os.path.expanduser(work_dir)
+    folders = [os.path.join(work_dir, d) for d in os.listdir(work_dir) if os.path.isdir(os.path.join(work_dir, d))]
+    if not folders:
+        return None
+    latest_folder = max(folders, key=os.path.getmtime)
+    return latest_folder
+
 def main():
     tasks = load_phased_tasks()
     ordered_tasks = sort_tasks_by_phase(tasks)
-
-    # Try to extract project name from tasks (assume first task contains it)
-    project_name = None
-    if ordered_tasks:
-        # Naive extraction: use the first word(s) of the first task as project name
-        # (You may want to improve this logic)
-        project_name = ordered_tasks[0]["task"].split()[0].lower()
-
-    pm = ProjectManager()
-    project = pm.find_project(project_name) if project_name else None
-
-    context_snippets = []
-    if project:
-        # Existing project: use embedding index to get relevant code
-        folder = project["folder"]
-        idx = EmbeddingIndex(folder)
-        # Use the concatenated tasks as the query
-        query_text = "\n".join([t["task"] for t in ordered_tasks])
-        context_snippets = idx.query(query_text, top_k=5)
-        print(f"[Kettle] Project match found: {project['project_name']} (folder: {folder})")
+    # Use the messages that generated the tasks for matching
+    messages = [t["source"] for t in ordered_tasks]
+    project_folder, score = find_closest_project(messages)
+    codebase = None
+    creating_new_project = False
+    if project_folder:
+        print(f"🔄 Modifying existing project at {project_folder} (similarity: {score:.2f})")
+        # Gather all code files and send to LLM
+        codebase = gather_code_files(project_folder)
+        print(f"Sending {len(codebase)} files to LLM for modification.")
     else:
-        print("[Kettle] No existing project match found. Creating a new project.")
-
-    prompt = execute_tasks_prompt(ordered_tasks, context_snippets=context_snippets, project_folder=folder if project else None)
+        # Use a human-readable project name from the first message
+        first_message = messages[0] if messages else "project"
+        project_name = slugify(first_message)
+        project_folder = os.path.expanduser(f"~/Desktop/Work/{project_name}")
+        print(f"🆕 Creating new project at {project_folder}")
+        creating_new_project = True
+    prompt = execute_tasks_prompt(ordered_tasks, codebase=codebase)
     script = clean_code_blocks(call_perplexity(prompt))
 
     with open("script.py", "w") as f:
@@ -97,6 +124,12 @@ def main():
     validate_script(script)
     execute_script(script)
 
+    # After script runs, get the actual folder created/modified
+    if creating_new_project:
+        actual_folder = get_latest_project_folder()
+        print(f"[DEBUG] Detected actual project folder: {actual_folder}")
+        if actual_folder:
+            save_project_embedding(actual_folder, messages)
 
 if __name__ == "__main__":
     main()

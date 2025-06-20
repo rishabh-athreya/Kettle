@@ -23,18 +23,15 @@ Messages:
 {joined}
 """
 
-def execute_tasks_prompt(sorted_tasks, context_snippets=None, project_folder=None):
+def execute_tasks_prompt(sorted_tasks, codebase=None):
     task_list = "\n".join(
         f"- ({t['phase']}) {t['task']}" for t in sorted_tasks
     )
-    context_section = ""
-    if context_snippets:
-        context_section = "\n\nRelevant code context from the project:\n" + "\n\n".join(
-            f"File: {s['file']} (lines {s['start']}-{s['end']})\n{s['text']}" for s in context_snippets
-        )
-    folder_instruction = ""
-    if project_folder:
-        folder_instruction = f"\n\nIMPORTANT: All work must happen inside the folder: {project_folder}\nDo not create a new project folder. Modify or add files only within this directory."
+    codebase_section = ""
+    if codebase:
+        codebase_section = "\n\n# Existing project files (edit as needed):\n"
+        for path, content in codebase.items():
+            codebase_section += f"\n--- FILE: {path} ---\n{content}\n"
     return f"""
 You are a coding assistant. Write a single Python script that performs the following project tasks in the correct order.
 There are three categories of tasks:
@@ -47,13 +44,15 @@ Use os.path.expanduser() to resolve the ~ path
 Create the project folder before writing files
 Set up a Python virtual environment inside the project folder
 Use subprocess.run() to create the venv, install dependencies, etc.
+VERY IMPORTANT - IF YOU ARE MODIFYING AN EXISTING PROJECT, YOU SHOULD MODIFY EXISTING FILES IN ADDITION TO WRITING NEW ONES IN ORDER TO IMPLEMENT THE DESIRED FEATURE.
+For example, if a Flask app already has a app.py file, you should update it instead of creating a new app.py.
 ✅ Your script must include all necessary imports (e.g. import os, import subprocess, import sys, etc.)
 ✅ Do not assume any modules are pre-imported
 ✅ The script must be runnable immediately without modification
 Do not return explanations — only return valid, complete Python code
+
 General Template Syntax Warning:
 When generating code that involves templates, markup, or files that mix multiple languages (e.g., HTML with embedded template logic, CSS, or JavaScript):
-
 - Only use the templating language's special delimiters (e.g., {{{{ ... }}}}, {{% ... %}} in Jinja2) for template logic or variable interpolation.
 - For embedded languages (like CSS or JavaScript), use their standard syntax (e.g., single curly braces for CSS: body {{ background: #fff; }}).
 - If you need to include literal template delimiters (such as {{{{ or }}}}), use the appropriate escaping mechanism (e.g., {{% raw %}} ... {{% endraw %}} in Jinja2).
@@ -66,6 +65,5 @@ I will be demoing this product, and I cannot risk a syntax error.
 
 Here are the tasks to perform:
 {task_list}
-{context_section}
-{folder_instruction}
+{codebase_section}
 """ 
