@@ -1,12 +1,7 @@
 [
   {
-    "task": "Create a folder to store logs from games",
-    "source": "I want there to be a folder with logs from games",
-    "phase": "project_setup"
-  },
-  {
-    "task": "Develop a website hosted on localhost to play tic tac toe",
-    "source": "Make a website hosted on local host to play tic tac toe",
+    "task": "Implement a Flappy Bird game",
+    "source": "Can you create a flappy bird game",
     "phase": "feature_implementation"
   }
 ]

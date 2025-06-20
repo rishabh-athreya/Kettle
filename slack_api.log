@@ -1,0 +1,41 @@
+2025-06-19 21:20:44,724 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 50}
+2025-06-19 21:20:45,039 [Slack] Rate limited; retry after 60s
+2025-06-19 21:21:45,545 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 50}
+2025-06-19 21:30:19,863 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393113.015669'}
+2025-06-19 21:30:30,210 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393113.015669'}
+2025-06-19 21:30:40,527 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393113.015669'}
+2025-06-19 21:30:50,864 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393113.015669'}
+2025-06-19 21:31:01,193 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393842.087659'}
+2025-06-19 21:31:11,518 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393842.087659'}
+2025-06-19 21:31:24,670 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393842.087659'}
+2025-06-19 21:32:11,811 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393842.087659'}
+2025-06-19 21:32:15,160 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393842.087659'}
+2025-06-19 21:32:18,502 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393842.087659'}
+2025-06-19 21:32:21,811 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393842.087659'}
+2025-06-19 21:32:22,121 [Slack] Rate limited; retry after 60s
+2025-06-19 21:33:22,626 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393842.087659'}
+2025-06-19 21:33:25,986 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393940.961319'}
+2025-06-19 21:33:26,282 [Slack] Rate limited; retry after 60s
+2025-06-19 21:34:26,788 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393940.961319'}
+2025-06-19 21:34:29,711 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 50, 'oldest': '1750393940.961319'}
+2025-06-19 21:34:47,292 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393940.961319'}
+2025-06-19 21:34:47,591 [Slack] Rate limited; retry after 60s
+2025-06-19 21:35:48,095 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750393940.961319'}
+2025-06-19 21:35:51,438 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750394105.139279'}
+2025-06-19 21:35:51,795 [Slack] Rate limited; retry after 60s
+2025-06-19 21:36:52,300 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750394105.139279'}
+2025-06-19 21:36:55,350 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 50, 'oldest': '1750394105.139279'}
+2025-06-19 21:36:55,689 [Slack] Rate limited; retry after 60s
+2025-06-19 21:37:56,193 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 50, 'oldest': '1750394105.139279'}
+2025-06-19 21:38:04,966 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750394105.139279'}
+2025-06-19 21:38:05,268 [Slack] Rate limited; retry after 60s
+2025-06-19 21:39:05,774 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750394105.139279'}
+2025-06-19 21:39:09,106 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750394321.916099'}
+2025-06-19 21:39:09,401 [Slack] Rate limited; retry after 60s
+2025-06-19 21:40:09,907 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750394321.916099'}
+2025-06-19 21:40:12,912 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 50, 'oldest': '1750394321.916099'}
+2025-06-19 21:40:13,150 [Slack] Rate limited; retry after 60s
+2025-06-19 21:41:13,656 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 50, 'oldest': '1750394321.916099'}
+2025-06-19 21:41:38,274 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750394321.916099'}
+2025-06-19 21:41:41,627 conversations_history params={'channel': 'C092RPWS14Y', 'limit': 100, 'oldest': '1750394321.916099'}
+2025-06-19 21:41:41,930 [Slack] Rate limited; retry after 60s

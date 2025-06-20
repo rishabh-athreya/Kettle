@@ -4,6 +4,9 @@ from keys import PERPLEXITY_API_KEY
 import tempfile
 import subprocess
 import requests
+from prompts import execute_tasks_prompt
+from project_manager import ProjectManager
+from embedding_index import EmbeddingIndex
 
 PHASE_ORDER = ["project_setup", "dependency_installation", "feature_implementation"]
 
@@ -15,39 +18,6 @@ def load_phased_tasks(filepath="json/phased_tasks.json"):
 
 def sort_tasks_by_phase(tasks):
     return sorted(tasks, key=lambda t: PHASE_ORDER.index(t["phase"]))
-
-def build_prompt(sorted_tasks):
-    task_list = "\n".join(
-        f"- ({t['phase']}) {t['task']}" for t in sorted_tasks
-    )
-    return f"""
-You are a coding assistant. Write a single Python script that performs the following project tasks in the correct order.
-There are three categories of tasks:
-project_setup – creating folders, files, or scaffolding
-dependency_installation – installing Python packages (e.g. Flask, boto3)
-feature_implementation – writing application code into files
-🛠️ Requirements:
-All project work must happen inside ~/Desktop/Work/<project-folder-name>
-Use os.path.expanduser() to resolve the ~ path
-Create the project folder before writing files
-Set up a Python virtual environment inside the project folder
-Use subprocess.run() to create the venv, install dependencies, etc.
-✅ Your script must include all necessary imports (e.g. import os, import subprocess, import sys, etc.)
-✅ Do not assume any modules are pre-imported
-✅ The script must be runnable immediately without modification
-Do not return explanations — only return valid, complete Python code
-General Template Syntax Warning:
-When generating code that involves templates, markup, or files that mix multiple languages (e.g., HTML with embedded template logic, CSS, or JavaScript):
-
-- Only use the templating language's special delimiters (e.g., {{{{ ... }}}}, {{% ... %}} in Jinja2) for template logic or variable interpolation.
-- For embedded languages (like CSS or JavaScript), use their standard syntax (e.g., single curly braces for CSS: body {{ background: #fff; }}).
-- If you need to include literal template delimiters (such as {{{{ or }}}}), use the appropriate escaping mechanism (e.g., {{% raw %}} ... {{% endraw %}} in Jinja2).
-- **Never use double curly braces or Jinja2 delimiters in CSS or JavaScript blocks unless you are intentionally inserting template logic.**
-- If you are unsure, wrap CSS or JS blocks inside {{% raw %}} ... {{% endraw %}} to prevent Jinja2 from parsing them.
-- Double-check that the generated code does not accidentally introduce syntax errors due to delimiter confusion.
-Here are the tasks to perform:
-{task_list}
-"""
 
 def call_perplexity(prompt):
     headers = {
@@ -94,7 +64,30 @@ def validate_script(script_code):
 def main():
     tasks = load_phased_tasks()
     ordered_tasks = sort_tasks_by_phase(tasks)
-    prompt = build_prompt(ordered_tasks)
+
+    # Try to extract project name from tasks (assume first task contains it)
+    project_name = None
+    if ordered_tasks:
+        # Naive extraction: use the first word(s) of the first task as project name
+        # (You may want to improve this logic)
+        project_name = ordered_tasks[0]["task"].split()[0].lower()
+
+    pm = ProjectManager()
+    project = pm.find_project(project_name) if project_name else None
+
+    context_snippets = []
+    if project:
+        # Existing project: use embedding index to get relevant code
+        folder = project["folder"]
+        idx = EmbeddingIndex(folder)
+        # Use the concatenated tasks as the query
+        query_text = "\n".join([t["task"] for t in ordered_tasks])
+        context_snippets = idx.query(query_text, top_k=5)
+        print(f"[Kettle] Project match found: {project['project_name']} (folder: {folder})")
+    else:
+        print("[Kettle] No existing project match found. Creating a new project.")
+
+    prompt = execute_tasks_prompt(ordered_tasks, context_snippets=context_snippets, project_folder=folder if project else None)
     script = clean_code_blocks(call_perplexity(prompt))
 
     with open("script.py", "w") as f:
