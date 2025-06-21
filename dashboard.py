@@ -14,18 +14,29 @@ class KettleWidget:
             self.root = tk.Toplevel(parent)
         self.root.title("Kettle AI")
         self.root.geometry("60x60")
+        
         # Set transparent background for the window (macOS only)
         try:
             self.root.attributes('-transparent', True)
+            self.root.configure(bg='systemTransparent')
         except tk.TclError:
-            pass
-        self.root.configure(bg='systemTransparent')
+            # Fallback for non-macOS or when transparency fails
+            try:
+                self.root.configure(bg='#000000')
+            except:
+                self.root.configure(bg='black')
         
         # Make window stay on top
-        self.root.attributes('-topmost', True)
+        try:
+            self.root.attributes('-topmost', True)
+        except tk.TclError:
+            pass
         
         # Remove window decorations
-        self.root.overrideredirect(True)
+        try:
+            self.root.overrideredirect(True)
+        except tk.TclError:
+            pass
         
         # Position at bottom right
         self.position_window()
@@ -64,7 +75,12 @@ class KettleWidget:
     def create_widget(self):
         """Create the circular widget button"""
         # Create circular canvas with transparent background
-        canvas = tk.Canvas(self.root, width=60, height=60, bg='systemTransparent')
+        try:
+            canvas = tk.Canvas(self.root, width=60, height=60, bg='systemTransparent')
+        except tk.TclError:
+            # Fallback for non-macOS
+            canvas = tk.Canvas(self.root, width=60, height=60, bg='#000000')
+        
         canvas.configure(highlightthickness=0)
         canvas.pack()
         

@@ -53,48 +53,90 @@ class KettleDaemon:
             self.last_processed_ts = 0
 
     def is_vscode_running(self):
-        """Checks if the VS Code window is visible."""
+        """Checks if the VS Code window is visible and active."""
         try:
+            # Use AppleScript to check for visible VS Code (Electron) windows specifically
             script = '''
             tell application "System Events"
-                set visibleApps to name of every process whose visible is true
-                return visibleApps
+                set electronProcesses to (every process whose name contains "Electron")
+                repeat with proc in electronProcesses
+                    if visible of proc is true then
+                        -- Check if this Electron process is VS Code by looking at its command line
+                        set procInfo to (every process whose name contains "Electron")
+                        repeat with p in procInfo
+                            if visible of p is true then
+                                return "true"
+                            end if
+                        end repeat
+                    end if
+                end repeat
+                return "false"
             end tell
             '''
             result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True, timeout=5)
-            return result.returncode == 0 and ("Electron" in result.stdout or "Code" in result.stdout)
-        except Exception:
-            # Fallback for when AppleScript fails
-            for proc in psutil.process_iter(['pid', 'name']):
+            if result.returncode == 0 and "true" in result.stdout.strip():
+                return True
+        except Exception as e:
+            print(f"⚠️  AppleScript detection failed: {e}")
+        
+        # Fallback: Check for Electron process that is VS Code
+        try:
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
                 try:
-                    if "Code" in proc.info['name'] and "Helper" not in proc.info['name']:
-                        return True
+                    proc_name = proc.info['name']
+                    # Look for Electron process (VS Code runs as Electron)
+                    if proc_name == "Electron":
+                        cmdline = proc.info.get('cmdline', [])
+                        # Check if this Electron process is VS Code by looking at command line arguments
+                        if cmdline and any('code' in arg.lower() for arg in cmdline):
+                            return True
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
-            return False
+        except Exception as e:
+            print(f"⚠️  Process detection failed: {e}")
+        
+        return False
 
     def check_vscode_status(self):
         """Shows or hides the widget based on VS Code visibility."""
         is_running = self.is_vscode_running()
         if is_running and not self.vscode_running:
+            print("🔄 VS Code detected - showing widget...")
             self.show_widget()
         elif not is_running and self.vscode_running:
+            print("🔄 VS Code closed - hiding widget...")
             self.hide_widget()
+        elif is_running and self.vscode_running:
+            print("📝 VS Code is running (widget should be visible)")
+        else:
+            print("📝 VS Code is not running (widget should be hidden)")
         self.vscode_running = is_running
 
     def show_widget(self):
         """Creates and shows the widget."""
         if self.widget is None:
-            self.widget = dashboard.KettleWidget(parent=self.root)
+            try:
+                # Create widget without parent to avoid mainloop conflicts
+                self.widget = dashboard.KettleWidget()
+                print("✅ Widget shown (VS Code open)")
+            except Exception as e:
+                print(f"❌ Failed to show widget: {e}")
+                print("🔄 Will retry on next VS Code detection...")
+                self.widget = None
+                # Don't let widget errors crash the daemon
+                return False
+        return True
 
     def hide_widget(self):
         """Hides and destroys the widget."""
         if self.widget:
             try:
-                self.widget.root.destroy()
-            except:
-                pass
-            self.widget = None
+                self.widget.close_widget()
+                print("✅ Widget hidden (VS Code closed)")
+            except Exception as e:
+                print(f"❌ Error hiding widget: {e}")
+            finally:
+                self.widget = None
 
     def process_slack_messages(self):
         """Checks Slack and processes messages after an inactivity period."""
@@ -142,7 +184,10 @@ class KettleDaemon:
 
                 # Refresh widget content if visible
                 if self.widget:
-                    self.widget.root.after(100, self.widget.refresh_content)
+                    try:
+                        self.widget.refresh_content()
+                    except Exception as e:
+                        print(f"❌ Error refreshing widget: {e}")
             else:
                 remaining = self.inactivity_period - time_since_last_msg
 
@@ -155,6 +200,12 @@ class KettleDaemon:
 
     def run(self):
         """Starts the daemon."""
+        print("🚀 Kettle Daemon Starting...")
+        print("📝 Monitoring VS Code process...")
+        print("💡 Widget will show when VS Code opens and hide when it closes")
+        print("🛑 Press Ctrl+C to stop the daemon")
+        print("⏱️  Checking every 2 seconds...")
+        
         self.root.after(1000, self.periodic_check)
         self.root.mainloop()
 
