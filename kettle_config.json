@@ -1,0 +1,10 @@
+{
+  "ide_applications": {
+    "vscode": {
+      "mac": "/Applications/Visual Studio Code.app"
+    }
+  },
+  "slack_check_interval": 10,
+  "widget_check_interval": 2,
+  "auto_process_slack": true
+}
