@@ -1,12 +1,22 @@
 [
   {
-    "task": "Create logs.txt file for score tracking",
-    "source": "can you add a logs.txt to the flappy bird game to track game scores",
+    "task": "Create logs.txt file for storing game results",
+    "source": "Add logging to flappy bird game",
     "phase": "project_setup"
   },
   {
-    "task": "Implement score logging functionality",
-    "source": "can you add a logs.txt to the flappy bird game to track game scores",
+    "task": "Implement game result logging functionality",
+    "source": "Add logging to flappy bird game",
     "phase": "feature_implementation"
+  },
+  {
+    "task": "Update character sprite with bird graphics",
+    "source": "Update flappy bird character",
+    "phase": "feature_implementation"
+  },
+  {
+    "task": "Install pygame library",
+    "source": "Flappy bird game dependencies",
+    "phase": "dependency_installation"
   }
 ]
