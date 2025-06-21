@@ -1,12 +1,12 @@
 [
   {
-    "task": "Create logs.txt file for score tracking",
-    "source": "add logs.txt to snake game",
+    "task": "Create logs.txt file for game result tracking",
+    "source": "can you add a logs.txt to the flappy bird game to track game results",
     "phase": "project_setup"
   },
   {
-    "task": "Implement score logging functionality",
-    "source": "add logs.txt to snake game",
+    "task": "Implement game result logging functionality",
+    "source": "can you add a logs.txt to the flappy bird game to track game results",
     "phase": "feature_implementation"
   }
 ]

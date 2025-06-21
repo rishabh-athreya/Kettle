@@ -16,18 +16,38 @@ def compute_embedding(messages):
     return model.encode([" ".join(messages)], normalize_embeddings=True)[0].tolist()
 
 def save_project_embedding(folder, messages):
-    embedding = compute_embedding(messages)
+    folder_name = os.path.basename(os.path.normpath(folder))
+    
     if os.path.exists(EMBEDDINGS_PATH):
         with open(EMBEDDINGS_PATH, "r") as f:
             data = json.load(f)
     else:
         data = {}
-    folder_name = os.path.basename(os.path.normpath(folder))
+    
+    # Check if project already exists
+    if folder_name in data:
+        # Append new messages to existing ones
+        existing_messages = data[folder_name]["messages"]
+        if isinstance(existing_messages, list):
+            # Combine existing and new messages, avoiding duplicates
+            all_messages = existing_messages + [msg for msg in messages if msg not in existing_messages]
+        else:
+            # If existing_messages is not a list, convert it and add new messages
+            all_messages = [existing_messages] + messages
+    else:
+        # New project, use the provided messages
+        all_messages = messages
+    
+    # Compute embedding based on all messages
+    embedding = compute_embedding(all_messages)
+    
+    # Update or create the project entry
     data[folder_name] = {
         "embedding": embedding,
-        "messages": messages,
+        "messages": all_messages,
         "folder": folder
     }
+    
     with open(EMBEDDINGS_PATH, "w") as f:
         json.dump(data, f, indent=2)
 
