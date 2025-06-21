@@ -1,17 +1,26 @@
+import sys
 import os
-import json
 
-import slack_fetch
+# Add the anthropic directory to the path so we can import the modules
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import extract_tasks
 import execute
-import subprocess
+import project_matcher
 
 if __name__ == "__main__":
-    subprocess.Popen(["python3", "kettle_dashboard.py"])
     print("🔵 Fetching Slack messages...")
+    # Note: slack_fetch is the same for both versions, so we import from parent directory
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import slack_fetch
     slack_fetch.main()
+    
     print("🟢 Extracting tasks from messages...")
     extract_tasks.main()
+    
+    print("🟡 Finding similar existing projects...")
+    closest_project, similarity = project_matcher.main()
+    
     print("🟣 Executing project setup...")
-    execute.main()
-    print("🟠 Launching Kettle dashboard...")
+    execute.main(existing_project_folder=closest_project) 

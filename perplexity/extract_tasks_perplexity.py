@@ -1,35 +1,33 @@
 import json
-from keys import ANTHROPIC_API_KEY
+from keys import PERPLEXITY_API_KEY
 import requests
-from prompts import extract_tasks_prompt
+from prompts_perplexity import extract_tasks_prompt
 
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
+PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
 
 def load_messages(json_path):
     with open(json_path, "r") as f:
         data = json.load(f)
     return [msg["text"] for msg in data.get("messages", [])]
 
-def call_claude(prompt):
+def call_perplexity(prompt):
     headers = {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "Content-Type": "application/json",
-        "anthropic-version": "2023-06-01"
+        "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
+        "Content-Type": "application/json"
     }
     body = {
-        "model": "claude-3-5-sonnet-20241022",
-        "max_tokens": 4000,
+        "model": "sonar-pro",
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.3
     }
-    response = requests.post(ANTHROPIC_API_URL, headers=headers, json=body)
+    response = requests.post(PERPLEXITY_API_URL, headers=headers, json=body)
     response.raise_for_status()
-    return response.json()["content"][0]["text"]
+    return response.json()["choices"][0]["message"]["content"]
 
 def main():
     messages = load_messages("json/messages.json")
     prompt = extract_tasks_prompt(messages)
-    output = call_claude(prompt)
+    output = call_perplexity(prompt)
 
     try:
         tasks = json.loads(output)
@@ -40,8 +38,8 @@ def main():
         print("✅ Saved tasks to json/phased_tasks.json")
 
     except json.JSONDecodeError:
-        print("❌ Claude returned invalid JSON:")
+        print("❌ Perplexity returned invalid JSON:")
         print(output)
 
 if __name__ == "__main__":
-    main() 
+    main()

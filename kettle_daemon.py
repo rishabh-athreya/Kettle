@@ -25,7 +25,7 @@ def reset_json_files():
 
 LAST_TS_PATH = os.path.join("json", "last_processed_ts.txt")
 MESSAGES_PATH = os.path.join("json", "messages.json")
-INACTIVITY_MINUTES = 0.5
+INACTIVITY_MINUTES = 0.33
 POLL_INTERVAL = 10  # seconds
 
 

@@ -22,7 +22,7 @@ def execute_tasks_prompt(sorted_tasks, codebase=None, existing_project_folder=No
     
     codebase_section = ""
     if codebase:
-        codebase_section = "\n\nEXISTING FILES AND CONTENTS (DO NOT REMOVE ANY OF THIS LOGIC):\n"
+        codebase_section = "\n\nExisting files:\n"
         for path, content in codebase.items():
             codebase_section += f"\n--- {path} ---\n{content}\n"
     
@@ -64,13 +64,6 @@ def execute_tasks_prompt(sorted_tasks, codebase=None, existing_project_folder=No
 
 **CRITICAL EXECUTION REQUIREMENT:**
 - Do NOT run or execute any of the files after writing them. Only write the files to disk.
-
-**CRITICAL IMPORT REQUIREMENTS:**
-- The script MUST start with these imports at the very top, in this order:
-    import os
-    import subprocess
-    import sys
-- Do NOT omit any of these imports, even if you think they are not needed.
 
 **CRITICAL INDENTATION REQUIREMENTS:**
 - Use EXACTLY 4 spaces for each indentation level
@@ -153,14 +146,3 @@ if not os.path.exists(app_path):
 ```
 
 {codebase_section}""" 
-
-def fetch_messages():
-    try:
-        with open("json/messages.json", "r") as f:
-            data = json.load(f)
-            messages = data.get("messages", [])
-            # Extract just the text content from each message
-            return [msg.get("text", "") for msg in messages if msg.get("text", "").strip()]
-    except Exception as e:
-        print(f"Error loading messages: {e}")
-        return [] 

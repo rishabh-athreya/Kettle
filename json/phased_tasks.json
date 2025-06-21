@@ -1,7 +1,12 @@
 [
   {
-    "task": "Add a logs.txt file to track results for the tic tac toe game",
-    "source": "can u add a logs.txt to track results for the tic tac toe game",
+    "task": "Create logs.txt file for score tracking",
+    "source": "can you add a logs.txt to the flappy bird game to track game scores",
+    "phase": "project_setup"
+  },
+  {
+    "task": "Implement score logging functionality",
+    "source": "can you add a logs.txt to the flappy bird game to track game scores",
     "phase": "feature_implementation"
   }
 ]
