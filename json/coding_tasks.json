@@ -1,0 +1,38 @@
+[
+  {
+    "task": "Implement Set up game development environment",
+    "source": "Create can you implement a simple flappy bird game for the upcoming middle school coding bootcamp",
+    "phase": "feature_implementation",
+    "category": "coding"
+  },
+  {
+    "task": "Implement Install game development libraries",
+    "source": "Create can you implement a simple flappy bird game for the upcoming middle school coding bootcamp",
+    "phase": "dependency_installation",
+    "category": "coding"
+  },
+  {
+    "task": "Implement Create game assets and sprites",
+    "source": "Create can you implement a simple flappy bird game for the upcoming middle school coding bootcamp",
+    "phase": "project_setup",
+    "category": "coding"
+  },
+  {
+    "task": "Implement Implement bird physics and controls",
+    "source": "Create can you implement a simple flappy bird game for the upcoming middle school coding bootcamp",
+    "phase": "feature_implementation",
+    "category": "coding"
+  },
+  {
+    "task": "Implement Add obstacle generation and collision",
+    "source": "Create can you implement a simple flappy bird game for the upcoming middle school coding bootcamp",
+    "phase": "feature_implementation",
+    "category": "coding"
+  },
+  {
+    "task": "Implement Implement scoring system",
+    "source": "Create can you implement a simple flappy bird game for the upcoming middle school coding bootcamp",
+    "phase": "feature_implementation",
+    "category": "coding"
+  }
+]
