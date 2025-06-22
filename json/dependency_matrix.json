@@ -1,0 +1,33 @@
+{
+  "dependencies": {
+    "53b1f59e-f3a8-5ebd-8636-aa9f27ee6ea2": [],
+    "2afe3cc9-0327-5433-8565-bdb3c51b2991": [
+      "53b1f59e-f3a8-5ebd-8636-aa9f27ee6ea2"
+    ],
+    "6c6d2495-4dda-5f66-a062-3298dc432969": [
+      "53b1f59e-f3a8-5ebd-8636-aa9f27ee6ea2",
+      "2afe3cc9-0327-5433-8565-bdb3c51b2991"
+    ],
+    "469f0b08-8da3-5199-b204-7f62c5a9f6ab": [
+      "2afe3cc9-0327-5433-8565-bdb3c51b2991",
+      "6c6d2495-4dda-5f66-a062-3298dc432969"
+    ],
+    "3fa181ed-e38b-57b3-b25e-e00c2c351383": [
+      "6c6d2495-4dda-5f66-a062-3298dc432969",
+      "469f0b08-8da3-5199-b204-7f62c5a9f6ab"
+    ],
+    "f860ebea-8428-5d9a-9603-adfe8a9d695b": [
+      "469f0b08-8da3-5199-b204-7f62c5a9f6ab",
+      "3fa181ed-e38b-57b3-b25e-e00c2c351383"
+    ]
+  },
+  "explanations": {
+    "53b1f59e-f3a8-5ebd-8636-aa9f27ee6ea2": "No dependencies - creating the project directory is the first step",
+    "2afe3cc9-0327-5433-8565-bdb3c51b2991": "Depends on task 1 because pygame needs to be installed into the project directory",
+    "6c6d2495-4dda-5f66-a062-3298dc432969": "Depends on tasks 1 and 2 because creating the game window requires both the project structure and pygame library",
+    "469f0b08-8da3-5199-b204-7f62c5a9f6ab": "Depends on tasks 2 and 3 because implementing the bird requires pygame and a working game window",
+    "3fa181ed-e38b-57b3-b25e-e00c2c351383": "Depends on tasks 3 and 4 because pipe obstacles need the game window and must interact with the bird character",
+    "f860ebea-8428-5d9a-9603-adfe8a9d695b": "Depends on tasks 4 and 5 because scoring is based on the bird successfully navigating through pipes"
+  },
+  "analyzed_at": "2024-01-01T00:00:00Z"
+}

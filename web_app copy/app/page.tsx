@@ -11,41 +11,35 @@ import {
   Zap,
   RefreshCw,
   TrendingUp,
-  Play,
-  Trash2
+  Download
 } from 'lucide-react'
 import TaskCard from './components/TaskCard'
 import MessageCard from './components/MessageCard'
 import StatsCard from './components/StatsCard'
-import { Task, Message, SelectionStatus } from './types'
+import { Task, Message, ApprovalStatus } from './types'
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
-  const [executing, setExecuting] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [stats, setStats] = useState({
     totalTasks: 0,
-    selectedTasks: 0,
-    pendingSelection: 0,
-    executedTasks: 0,
+    completedTasks: 0,
+    pendingApproval: 0,
     totalMessages: 0
   })
 
   useEffect(() => {
     fetchData()
     // Set up polling for real-time updates - reduced to 30 seconds
-    const interval = setInterval(() => {
-      console.log('Auto-refreshing data...')
-      fetchData()
-    }, 30000)
+    const interval = setInterval(fetchData, 30000)
     return () => clearInterval(interval)
   }, [])
 
   const fetchData = async () => {
     try {
-      console.log('Fetching data from API...')
       const [tasksRes, messagesRes] = await Promise.all([
         fetch('/api/tasks'),
         fetch('/api/messages')
@@ -53,29 +47,22 @@ export default function Dashboard() {
       
       if (tasksRes.ok) {
         const tasksData = await tasksRes.json()
-        console.log(`Fetched ${tasksData.length} tasks`)
         setTasks(tasksData)
         setStats(prev => ({
           ...prev,
           totalTasks: tasksData.length,
-          selectedTasks: tasksData.filter((t: Task) => t.selectionStatus === 'selected').length,
-          pendingSelection: tasksData.filter((t: Task) => t.selectionStatus === 'pending').length,
-          executedTasks: tasksData.filter((t: Task) => t.selectionStatus === 'executed').length
+          completedTasks: tasksData.filter((t: Task) => t.approvalStatus === 'approved').length,
+          pendingApproval: tasksData.filter((t: Task) => t.approvalStatus === 'pending').length
         }))
-      } else {
-        console.error('Failed to fetch tasks:', tasksRes.status)
       }
       
       if (messagesRes.ok) {
         const messagesData = await messagesRes.json()
-        console.log(`Fetched ${messagesData.messages?.length || 0} messages`)
         setMessages(messagesData.messages || [])
         setStats(prev => ({
           ...prev,
           totalMessages: messagesData.messages?.length || 0
         }))
-      } else {
-        console.error('Failed to fetch messages:', messagesRes.status)
       }
       
       setLastUpdate(new Date())
@@ -86,38 +73,10 @@ export default function Dashboard() {
     }
   }
 
-  const handleTaskSelection = async (taskId: string, status: SelectionStatus) => {
+  const handleManualRefresh = async () => {
+    setRefreshing(true)
     try {
-      const response = await fetch(`/api/tasks/${taskId}/select`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      })
-
-      if (response.ok) {
-        // Always re-fetch from backend to ensure UI is in sync
-        await fetchData()
-      } else {
-        console.error('Failed to update task selection')
-        alert('Failed to update task selection. Please try again.')
-      }
-    } catch (error) {
-      console.error('Error updating task selection:', error)
-      alert('Error updating task selection. Please try again.')
-    }
-  }
-
-  const handleExecuteSelected = async () => {
-    const selectedTasks = tasks.filter(task => task.selectionStatus === 'selected')
-    
-    if (selectedTasks.length === 0) {
-      alert('No tasks selected for execution. Please select some tasks first.')
-      return
-    }
-
-    setExecuting(true)
-    try {
-      const response = await fetch('/api/execute-selected', {
+      const response = await fetch('/api/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
@@ -125,48 +84,73 @@ export default function Dashboard() {
       const result = await response.json()
       
       if (result.success) {
-        alert(`Successfully executed ${result.executedTasks} tasks!`)
-        await fetchData() // Refresh to show updated statuses
+        // Wait a moment for the pipeline to complete, then fetch new data
+        setTimeout(() => {
+          fetchData()
+        }, 2000)
       } else {
-        console.error('Execution failed:', result.error)
-        alert(`Execution failed: ${result.error}`)
+        console.error('Refresh failed:', result.error)
+        alert(`Refresh failed: ${result.error}`)
       }
     } catch (error) {
-      console.error('Error executing tasks:', error)
-      alert('Error executing tasks. Check console for details.')
+      console.error('Error refreshing data:', error)
+      alert('Error refreshing data. Check console for details.')
     } finally {
-      setExecuting(false)
+      setRefreshing(false)
     }
   }
 
-  const handleReset = async () => {
-    if (!confirm('Are you sure you want to reset all tasks and messages? This will clear everything.')) {
-      return
-    }
-    
+  const handleApproval = async (taskId: string, status: ApprovalStatus) => {
     try {
-      // Clear tasks and messages by setting them to empty
-      const tasksResponse = await fetch('/api/tasks', {
+      const response = await fetch(`/api/tasks/${taskId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset' })
+        body: JSON.stringify({ status })
       })
       
-      const messagesResponse = await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset' })
-      })
-      
-      if (tasksResponse.ok && messagesResponse.ok) {
-        alert('Successfully reset tasks and messages!')
-        await fetchData() // Refresh the UI
+      if (response.ok) {
+        // Update local state immediately for better UX
+        setTasks(prev => prev.map(task => 
+          task.id === taskId ? { ...task, approvalStatus: status } : task
+        ))
+        
+        // Update stats
+        setStats(prev => ({
+          ...prev,
+          completedTasks: status === 'approved' ? prev.completedTasks + 1 : prev.completedTasks,
+          pendingApproval: prev.pendingApproval - 1
+        }))
+        
+        // If approved, trigger task execution
+        if (status === 'approved') {
+          await executeTask(taskId)
+        }
       } else {
-        alert('Failed to reset data. Please try again.')
+        console.error('Failed to update task approval')
+        alert('Failed to update task approval. Please try again.')
       }
     } catch (error) {
-      console.error('Error resetting data:', error)
-      alert('Error resetting data. Check console for details.')
+      console.error('Error updating task approval:', error)
+      alert('Error updating task approval. Please try again.')
+    }
+  }
+
+  const executeTask = async (taskId: string) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Task execution result:', result)
+        // You could show a success notification here
+      } else {
+        console.error('Failed to execute task')
+      }
+    } catch (error) {
+      console.error('Error executing task:', error)
     }
   }
 
@@ -200,24 +184,24 @@ export default function Dashboard() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleExecuteSelected}
-                disabled={executing || stats.selectedTasks === 0}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white rounded-md transition-colors"
+                onClick={handleManualRefresh}
+                disabled={refreshing}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded-md transition-colors"
               >
-                <Play className={`h-4 w-4 ${executing ? 'animate-spin' : ''}`} />
-                <span>{executing ? 'Executing...' : `Execute Selected (${stats.selectedTasks})`}</span>
+                <Download className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>{refreshing ? 'Fetching...' : 'Fetch Slack'}</span>
               </motion.button>
               <button
-                onClick={handleReset}
+                onClick={fetchData}
                 className="flex items-center space-x-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-md transition-colors"
               >
-                <Trash2 className="h-4 w-4" />
-                <span>Reset</span>
+                <RefreshCw className="h-4 w-4" />
+                <span>Refresh</span>
               </button>
             </div>
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
-            Last updated: {lastUpdate.toLocaleTimeString()} • Auto-refresh every 30 seconds • Continuous Slack monitoring
+            Last updated: {lastUpdate.toLocaleTimeString()} • Auto-refresh every 30 seconds
           </div>
         </div>
       </header>
@@ -232,21 +216,21 @@ export default function Dashboard() {
             color="blue"
           />
           <StatsCard
-            title="Selected"
-            value={stats.selectedTasks}
+            title="Completed"
+            value={stats.completedTasks}
             icon={CheckCircle}
             color="green"
           />
           <StatsCard
-            title="Pending Selection"
-            value={stats.pendingSelection}
+            title="Pending Approval"
+            value={stats.pendingApproval}
             icon={Clock}
             color="yellow"
           />
           <StatsCard
-            title="Executed"
-            value={stats.executedTasks}
-            icon={Play}
+            title="Messages"
+            value={stats.totalMessages}
+            icon={MessageSquare}
             color="purple"
           />
         </div>
@@ -261,10 +245,10 @@ export default function Dashboard() {
             >
               <div className="bg-card rounded-lg border border-border p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-foreground">Task Selection</h2>
+                  <h2 className="text-xl font-semibold text-foreground">Task History</h2>
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                     <TrendingUp className="h-4 w-4" />
-                    <span>Select tasks to execute</span>
+                    <span>Real-time updates</span>
                   </div>
                 </div>
                 
@@ -272,7 +256,7 @@ export default function Dashboard() {
                   {tasks.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Coffee className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No tasks yet. Kettle is monitoring Slack for new messages...</p>
+                      <p>No tasks yet. Click "Fetch Slack" to get started!</p>
                     </div>
                   ) : (
                     tasks.map((task, index) => (
@@ -284,7 +268,7 @@ export default function Dashboard() {
                       >
                         <TaskCard
                           task={task}
-                          onSelection={handleTaskSelection}
+                          onApproval={handleApproval}
                         />
                       </motion.div>
                     ))
@@ -308,7 +292,7 @@ export default function Dashboard() {
                   {messages.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No messages yet</p>
+                      <p>No messages yet. Click "Fetch Slack" to load messages!</p>
                     </div>
                   ) : (
                     messages.slice(0, 5).map((message, index) => (

@@ -1,4 +1,4 @@
-export type SelectionStatus = 'pending' | 'selected' | 'rejected' | 'executed'
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
 
 export type TaskPhase = 'project_setup' | 'dependency_installation' | 'feature_implementation' | 'testing' | 'complete'
 
@@ -7,10 +7,9 @@ export interface Task {
   task: string
   source: string
   phase: TaskPhase
-  selectionStatus: SelectionStatus
+  approvalStatus: ApprovalStatus
   createdAt: string
-  selectedAt?: string
-  executedAt?: string
+  completedAt?: string
   user?: string
 }
 
@@ -23,12 +22,11 @@ export interface Message {
 
 export interface Stats {
   totalTasks: number
-  selectedTasks: number
-  pendingSelection: number
-  executedTasks: number
+  completedTasks: number
+  pendingApproval: number
   totalMessages: number
 }
 
-export interface SelectionRequest {
-  status: SelectionStatus
+export interface ApprovalRequest {
+  status: ApprovalStatus
 } 

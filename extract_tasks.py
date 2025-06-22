@@ -4,6 +4,9 @@ import os
 from keys import ANTHROPIC_API_KEY
 from prompts import extract_tasks_prompt
 
+# Import dependency analyzer
+import dependency_analyzer
+
 # Use the modern messages endpoint
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 
@@ -27,8 +30,51 @@ def fetch_messages():
         with open("json/messages.json", "r") as f:
             data = json.load(f)
             messages = data.get("messages", [])
-            # Extract just the text content from each message
+            
+        # Get the last processed timestamp for tasks
+        last_task_ts = 0
+        try:
+            with open("json/last_task_processed_ts.txt", "r") as f:
+                last_task_ts = float(f.read().strip())
+        except (FileNotFoundError, ValueError):
+            pass
+        
+        # Check if we have any existing tasks
+        try:
+            with open("json/phased_tasks.json", "r") as f:
+                existing_tasks = json.load(f)
+                has_existing_tasks = len(existing_tasks) > 0
+        except (FileNotFoundError, json.JSONDecodeError):
+            has_existing_tasks = False
+        
+        # If no existing tasks, process all messages
+        if not has_existing_tasks:
+            print(f"Processing all {len(messages)} messages for initial task extraction")
+            # Update the timestamp to the latest message processed
+            if messages:
+                latest_ts = max(float(msg.get("ts", 0)) for msg in messages)
+                with open("json/last_task_processed_ts.txt", "w") as f:
+                    f.write(str(latest_ts))
             return [msg.get("text", "") for msg in messages if msg.get("text", "").strip()]
+        
+        # Only process messages newer than the last task extraction
+        new_messages = []
+        for msg in messages:
+            msg_ts = float(msg.get("ts", 0))
+            if msg_ts > last_task_ts:
+                new_messages.append(msg.get("text", ""))
+        
+        if new_messages:
+            print(f"Processing {len(new_messages)} new messages for task extraction")
+            # Update the timestamp to the latest message processed
+            latest_ts = max(float(msg.get("ts", 0)) for msg in messages)
+            with open("json/last_task_processed_ts.txt", "w") as f:
+                f.write(str(latest_ts))
+            return new_messages
+        else:
+            print("No new messages for task extraction")
+            return []
+            
     except FileNotFoundError:
         print("Warning: json/messages.json not found. Using dummy message.")
         return ["Create a simple tic tac toe game to run on localhost"]
@@ -87,6 +133,12 @@ def call_claude(prompt_text: str) -> str:
 
 def main():
     messages = fetch_messages()
+    
+    # Don't process tasks if there are no messages
+    if not messages:
+        print("No messages to process for task extraction")
+        return
+    
     prompt = extract_tasks_prompt(messages)
     raw = call_claude(prompt)
     tasks = extract_valid_tasks_json(raw)
@@ -94,6 +146,11 @@ def main():
     with open("json/phased_tasks.json", "w") as f:
             json.dump(tasks, f, indent=2)
     print(f"✅ Extracted {len(tasks)} tasks and wrote to json/phased_tasks.json")
+    
+    # Run dependency analysis on the extracted tasks
+    print("🔍 Running dependency analysis...")
+    dependency_analyzer.create_dependency_matrix(tasks)
+    print("✅ Task extraction and dependency analysis complete")
 
 
 if __name__ == "__main__":

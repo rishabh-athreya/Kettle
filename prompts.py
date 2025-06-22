@@ -18,7 +18,28 @@ Messages:
 {joined}"""
 
 def execute_tasks_prompt(sorted_tasks, codebase=None, existing_project_folder=None):
-    task_list = "\n".join(f"- ({t['phase']}) {t['task']}" for t in sorted_tasks)
+    # Separate selected and rejected tasks
+    selected_tasks = [t for t in sorted_tasks if t.get('selectionStatus') == 'selected']
+    rejected_tasks = [t for t in sorted_tasks if t.get('selectionStatus') == 'rejected']
+    
+    task_list = "\n".join(f"- ({t['phase']}) {t['task']}" for t in selected_tasks)
+    
+    # Add rejected tasks as comments
+    rejected_section = ""
+    if rejected_tasks:
+        rejected_list = "\n".join(f"# REJECTED: {t['task']}" for t in rejected_tasks)
+        rejected_section = f"""
+
+**REJECTED TASKS (DO NOT IMPLEMENT THESE):**
+{rejected_list}
+
+**CRITICAL: DO NOT IMPLEMENT REJECTED FEATURES**
+- The above rejected tasks must NOT be implemented
+- Do not add any code related to these rejected features
+- Even if a rejected feature seems "logical" or "necessary", do not include it
+- If a selected task depends on a rejected task, implement only the parts that don't require the rejected feature
+- If you cannot implement a selected task without a rejected dependency, skip that task and add a comment explaining why
+"""
     
     codebase_section = ""
     if codebase:
@@ -37,11 +58,19 @@ def execute_tasks_prompt(sorted_tasks, codebase=None, existing_project_folder=No
 - If the folder doesn't exist, create it
 """
     
-    return f"""Write a Python script that executes these tasks in order:
+    return f"""Write a Python script that executes these SELECTED tasks in order:
 
 {task_list}
 
 {existing_project_section}
+
+**CRITICAL FEATURE CONSTRAINT:**
+- ONLY implement the features explicitly listed in the selected tasks above
+- Do NOT add any features that are not explicitly mentioned in the selected tasks
+- Do NOT add "logical" or "necessary" features that weren't explicitly selected
+- If a feature seems like it should be included but wasn't selected, do NOT include it
+
+{rejected_section}
 
 **CRITICAL CODE PRESERVATION REQUIREMENTS:**
 - When modifying existing files, PRESERVE ALL EXISTING FUNCTIONALITY
@@ -152,7 +181,7 @@ if not os.path.exists(app_path):
 # Do NOT run or execute app.py or any other files. Only write them to disk.
 ```
 
-{codebase_section}""" 
+{codebase_section}"""
 
 def fetch_messages():
     try:

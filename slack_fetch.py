@@ -55,11 +55,44 @@ def save_messages(messages, path="json/messages.json", since_ts=None):
     filtered = [m for m in messages if m.get("user") != BOT_USER_ID]
     if since_ts is not None:
         filtered = [m for m in filtered if float(m.get("ts", 0)) > float(since_ts)]
-    formatted = {"messages": [{"text": m.get("text", ""), "user": m.get("user", ""), "ts": m.get("ts", "")} for m in filtered]}
+    
+    # Load existing messages
+    existing_messages = []
+    try:
+        with open(path, "r") as f:
+            existing_data = json.load(f)
+            existing_messages = existing_data.get("messages", [])
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    
+    # Combine existing and new messages, avoiding duplicates
+    all_messages = existing_messages.copy()
+    existing_ts = {msg.get("ts") for msg in existing_messages}
+    
+    for msg in filtered:
+        if msg.get("ts") not in existing_ts:
+            all_messages.append({
+                "text": msg.get("text", ""), 
+                "user": msg.get("user", ""), 
+                "ts": msg.get("ts", "")
+            })
+    
+    # Sort by timestamp (newest first)
+    all_messages.sort(key=lambda x: float(x.get("ts", 0)), reverse=True)
+    
+    formatted = {"messages": all_messages}
+    
     if len(filtered) > 0:
         with open(path, "w") as f:
             json.dump(formatted, f, indent=2)
-        print(f"Saved {len(filtered)} messages")
+        print(f"Saved {len(filtered)} new messages (total: {len(all_messages)})")
+        
+        # Update the last processed timestamp to the latest message
+        if all_messages:
+            latest_ts = float(all_messages[0]["ts"])
+            with open("json/last_processed_ts.txt", "w") as f:
+                f.write(str(latest_ts))
+            print(f"Updated last processed timestamp to: {latest_ts}")
     else:
         print("No new messages, waiting to check again...")
 
