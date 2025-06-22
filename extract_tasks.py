@@ -563,22 +563,6 @@ def main():
     else:
         print("✅ Task extraction and categorization complete")
     
-    # Run dependency analysis on the extracted tasks
-    print("🔍 Running dependency analysis...")
-    # Load the flat tasks for dependency analysis
-    try:
-        with open("json/coding_tasks.json", "r") as f:
-            coding_tasks = json.load(f)
-        with open("json/research_tasks.json", "r") as f:
-            research_tasks = json.load(f)
-        with open("json/writing_tasks.json", "r") as f:
-            writing_tasks = json.load(f)
-        
-        all_tasks = coding_tasks + research_tasks + writing_tasks
-        create_dependency_matrix(all_tasks)
-    except Exception as e:
-        print(f"⚠️  Could not run dependency analysis: {e}")
-    
     # Automatically process research tasks to generate media resources
     if research_tasks and len(research_tasks) > 0:
         print("🔍 Research tasks detected - generating media resources...")

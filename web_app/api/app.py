@@ -202,7 +202,7 @@ def execute_selected_tasks():
             
             # Execute the selected tasks using the virtual environment's Python interpreter
             result = subprocess.run([
-                VENV_PYTHON, 'utils/execute.py'
+                VENV_PYTHON, 'execute.py'
             ], capture_output=True, text=True, timeout=300)  # 5 minute timeout
             
             # Check if files were actually created (success indicator)

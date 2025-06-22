@@ -1,32 +1,35 @@
 {
   "dependencies": {
-    "9f395c79-97f1-5b2e-9005-a2facac4cc5a": [],
-    "4d4e0135-52d0-5046-a1c9-e7c28296217d": [
-      "9f395c79-97f1-5b2e-9005-a2facac4cc5a"
+    "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0": [],
+    "a2f27739-bea9-5cc7-a790-7f3650ba1c67": [
+      "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0"
     ],
-    "5861e9c4-689e-5f14-851d-ec5de13c0f0c": [],
-    "9b1e1400-992d-54ef-9f9b-e4f733e63d6a": [
-      "9f395c79-97f1-5b2e-9005-a2facac4cc5a",
-      "4d4e0135-52d0-5046-a1c9-e7c28296217d"
+    "f0c9ff7b-6d46-5e88-8b42-b0fbeb4e0a82": [],
+    "82669787-62a6-5fe8-bd48-4246d5017438": [
+      "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0",
+      "a2f27739-bea9-5cc7-a790-7f3650ba1c67",
+      "f0c9ff7b-6d46-5e88-8b42-b0fbeb4e0a82"
     ],
-    "4f1cc870-2ca3-515b-ac8d-f1f2785b1be4": [
-      "5861e9c4-689e-5f14-851d-ec5de13c0f0c",
-      "9b1e1400-992d-54ef-9f9b-e4f733e63d6a"
+    "fc8a3bfe-2ef4-58c7-915e-bc46fb459492": [
+      "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0",
+      "a2f27739-bea9-5cc7-a790-7f3650ba1c67",
+      "f0c9ff7b-6d46-5e88-8b42-b0fbeb4e0a82",
+      "82669787-62a6-5fe8-bd48-4246d5017438"
     ],
-    "c605f861-41de-579f-aa03-24d04cbf8980": [
-      "9b1e1400-992d-54ef-9f9b-e4f733e63d6a",
-      "4f1cc870-2ca3-515b-ac8d-f1f2785b1be4"
-    ],
-    "aaeb31bb-80e4-563e-b769-93d41de2e41d": []
+    "d9c4dca3-daf0-56d6-9758-926fcdfe642f": [
+      "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0",
+      "a2f27739-bea9-5cc7-a790-7f3650ba1c67",
+      "82669787-62a6-5fe8-bd48-4246d5017438",
+      "fc8a3bfe-2ef4-58c7-915e-bc46fb459492"
+    ]
   },
   "explanations": {
-    "9f395c79-97f1-5b2e-9005-a2facac4cc5a": "No dependencies - this is the foundational setup task",
-    "4d4e0135-52d0-5046-a1c9-e7c28296217d": "Depends on task 1 because libraries need to be installed into the configured environment",
-    "5861e9c4-689e-5f14-851d-ec5de13c0f0c": "No dependencies - asset creation can happen independently",
-    "9b1e1400-992d-54ef-9f9b-e4f733e63d6a": "Depends on tasks 1 and 2 because bird physics needs the development environment and libraries",
-    "4f1cc870-2ca3-515b-ac8d-f1f2785b1be4": "Depends on tasks 3 and 4 because obstacles need both assets and bird physics to be implemented",
-    "c605f861-41de-579f-aa03-24d04cbf8980": "Depends on tasks 4 and 5 because scoring needs both bird controls and obstacle system",
-    "aaeb31bb-80e4-563e-b769-93d41de2e41d": "No dependencies - reading about embedding models is an independent task"
+    "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0": "No dependencies - this is the foundational setup task",
+    "a2f27739-bea9-5cc7-a790-7f3650ba1c67": "Depends on task 1 because libraries need to be installed into the configured environment",
+    "f0c9ff7b-6d46-5e88-8b42-b0fbeb4e0a82": "No dependencies - asset creation can be done independently",
+    "82669787-62a6-5fe8-bd48-4246d5017438": "Depends on tasks 1, 2 for the development environment and libraries, and 3 for the sprites needed for the bird",
+    "fc8a3bfe-2ef4-58c7-915e-bc46fb459492": "Depends on tasks 1-4 as obstacles need the environment, libraries, assets, and working bird physics to implement collision detection",
+    "d9c4dca3-daf0-56d6-9758-926fcdfe642f": "Depends on tasks 1, 2 for the environment setup, 4 for player actions, and 5 for detecting successful navigation through obstacles"
   },
   "analyzed_at": "2024-01-01T00:00:00Z"
 }

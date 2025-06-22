@@ -158,10 +158,6 @@ def create_dependency_matrix(tasks):
         with open("json/dependency_matrix.json", "w") as f:
             json.dump(dependency_matrix, f, indent=2)
         
-        # Also update the tasks file with any generated IDs
-        with open("json/phased_tasks.json", "w") as f:
-            json.dump(tasks, f, indent=2)
-        
         print(f"✅ Dependency matrix created with {len(transformed_dependencies)} task relationships")
         return dependency_matrix
         

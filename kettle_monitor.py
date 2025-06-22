@@ -20,6 +20,7 @@ import queue
 import requests
 import slack_fetch
 import extract_tasks
+import json_utils
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
