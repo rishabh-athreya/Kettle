@@ -5,7 +5,7 @@ import sys
 import webbrowser
 import subprocess
 import time
-from keys import ANTHROPIC_API_KEY
+from utils.keys import ANTHROPIC_API_KEY
 
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 
@@ -286,11 +286,51 @@ def process_research_tasks(auto_mode=False):
     except Exception as e:
         print(f"❌ Error processing research tasks: {e}")
 
+def generate_latex_report(writing_task, research_summary=None):
+    """Generate a LaTeX report for the writing task and save it to json/writing/"""
+    os.makedirs("json/writing", exist_ok=True)
+    title = writing_task.get("task", "AI Report")
+    content = research_summary or "This is an auto-generated report."
+    latex = f"""
+\\documentclass{{article}}
+\\usepackage[utf8]{{inputenc}}
+\\title{{{title}}}
+\\begin{{document}}
+\\maketitle
+\\section*{{Summary}}
+{content}
+\\end{{document}}
+"""
+    # Use a filename based on the task
+    safe_title = title.replace(" ", "_").replace("/", "_")[:40]
+    filename = f"json/writing/{safe_title}.tex"
+    with open(filename, "w") as f:
+        f.write(latex)
+    return filename
+
+def process_writing_tasks():
+    """Generate LaTeX reports for all writing tasks and update their entries with report_path."""
+    try:
+        with open("json/writing_tasks.json", "r") as f:
+            writing_tasks = json.load(f)
+        updated_tasks = []
+        for task in writing_tasks:
+            # Optionally, you could summarize research here
+            report_path = generate_latex_report(task)
+            task["report_path"] = report_path
+            updated_tasks.append(task)
+        with open("json/writing_tasks.json", "w") as f:
+            json.dump(updated_tasks, f, indent=2)
+        print(f"✅ Generated LaTeX reports for {len(updated_tasks)} writing tasks.")
+    except Exception as e:
+        print(f"❌ Error generating LaTeX reports: {e}")
+
 def main(auto_mode=False):
     """Main function to run research processing"""
     print("🎬 Starting research processing...")
     process_research_tasks(auto_mode=auto_mode)
     print("✅ Research processing complete!")
+    process_writing_tasks()
 
 if __name__ == "__main__":
     main() 

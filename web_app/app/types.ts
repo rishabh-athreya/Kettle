@@ -12,6 +12,7 @@ export interface Task {
   selectedAt?: string
   executedAt?: string
   user?: string
+  report_path?: string
 }
 
 export interface Message {

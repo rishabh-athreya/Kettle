@@ -6,14 +6,34 @@ Kettle is an AI-powered project automation tool that reads Slack messages, extra
 
 - **Slack Integration**: Automatically fetches and processes Slack messages
 - **Task Extraction**: Uses AI to extract actionable coding tasks from messages
-- **Project Matching**: Finds similar existing projects using embeddings
+- **Project Matching**: Finds similar existing projects using embeddings (MongoDB-powered)
 - **Code Generation**: Generates and executes Python scripts for project setup
 - **IDE Integration**: Background daemon that shows a widget when IDEs are active
 - **Multi-LLM Support**: Works with Anthropic Claude, Google Gemini, and Perplexity AI
+- **MongoDB Storage**: Fast, scalable project embedding storage with rich querying
 
 ## Quick Start
 
-### 1. Setup Configuration
+### 1. Setup MongoDB (Recommended)
+
+For optimal performance, set up MongoDB for project embeddings:
+
+```bash
+# Install MongoDB (macOS with Homebrew)
+brew tap mongodb/brew
+brew install mongodb-community
+
+# Start MongoDB service
+brew services start mongodb/brew/mongodb-community
+
+# Test MongoDB integration
+python test_mongodb_integration.py
+
+# Migrate existing JSON data to MongoDB
+python migrate_to_mongodb.py
+```
+
+### 2. Setup Configuration
 
 Run the daemon for the first time to configure your IDE paths:
 
@@ -26,7 +46,7 @@ This will start an interactive configuration wizard where you can specify:
 - Slack check interval
 - Auto-processing settings
 
-### 2. Start the Daemon
+### 3. Start the Daemon
 
 ```bash
 python kettle_daemon.py
@@ -39,7 +59,7 @@ The daemon will:
 - Automatically process new Slack messages
 - Generate code based on extracted tasks
 
-### 3. Using the Widget
+### 4. Using the Widget
 
 When you open an IDE (like VSCode), a small ☕ widget will appear at the bottom right of your screen. Click it to see:
 
@@ -56,6 +76,20 @@ python utils/master_pipeline.py
 ```
 
 ## Configuration
+
+### MongoDB Configuration
+
+Kettle AI uses MongoDB for storing project embeddings. Configure MongoDB connection:
+
+```bash
+# Environment variables (optional)
+export MONGODB_URI="mongodb://localhost:27017/"
+export MONGODB_DATABASE="kettle_ai"
+
+# Or use default localhost connection
+```
+
+### Daemon Configuration
 
 The daemon uses `json/kettle_config.json` for configuration:
 
@@ -79,12 +113,15 @@ The daemon uses `json/kettle_config.json` for configuration:
 ```
 Kettle/
 ├── kettle_daemon.py          # Background daemon (main entry point)
+├── mongodb_config.py         # MongoDB connection and embedding management
+├── migrate_to_mongodb.py     # Migration script from JSON to MongoDB
+├── test_mongodb_integration.py # MongoDB integration tests
 ├── utils/                    # Core utility modules
 │   ├── master_pipeline.py        # Manual pipeline runner
 │   ├── dashboard.py              # Widget UI
 │   ├── extract_tasks.py          # Task extraction from messages
-│   ├── execute.py                # Code generation and execution
-│   ├── project_matcher.py        # Project similarity matching
+│   ├── execute_tasks.py          # Code generation and execution
+│   ├── project_matcher.py        # Project similarity matching (MongoDB-powered)
 │   ├── slack_fetch.py            # Slack message fetching
 │   ├── kettle_monitor.py         # Background monitoring
 │   ├── dependency_analyzer.py    # Task dependency analysis
@@ -137,6 +174,12 @@ The Kettle widget provides:
 
 ## Troubleshooting
 
+### MongoDB Connection Issues
+- Ensure MongoDB is running: `brew services start mongodb/brew/mongodb-community`
+- Test connection: `python test_mongodb_integration.py`
+- Check MongoDB logs for errors
+- Verify connection string in environment variables
+
 ### Widget Not Appearing
 - Check that your IDE is in the configuration
 - Ensure the daemon is running (`python kettle_daemon.py`)
@@ -149,11 +192,16 @@ The Kettle widget provides:
 
 ### Missing Dependencies
 ```bash
-pip install sentence-transformers psutil requests
+pip install sentence-transformers psutil requests pymongo
 ```
 
 ### IDE Integration Issues
 - Verify IDE paths in `json/kettle_config.json`
+
+### Project Similarity Not Working
+- Run migration script: `python migrate_to_mongodb.py`
+- Check MongoDB connection and data
+- Verify project embeddings are being saved
 
 ## Development
 

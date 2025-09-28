@@ -2,11 +2,11 @@ import json
 import requests
 import os
 from datetime import datetime
-from keys import ANTHROPIC_API_KEY
-from prompts import extract_tasks_prompt
+from utils.keys import ANTHROPIC_API_KEY
+from utils.prompts import extract_tasks_prompt
 import time
 from dependency_analyzer import *
-from research_processor import *
+import research_processor
 
 # Use the modern messages endpoint
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
@@ -145,7 +145,7 @@ Messages:
             return []
 
 def create_subtasks_for_subtask(subtask, source_message):
-    """Create ordered subtasks (coding, research, writing) for a subtask"""
+    """Create ordered subtasks (coding, research) for a subtask"""
     subtask_str = str(subtask).lower()
     source_str = str(source_message).lower()
     
@@ -158,16 +158,14 @@ def create_subtasks_for_subtask(subtask, source_message):
         "test", "debug", "fix", "bug", "error", "exception", "implement",
         "create", "develop", "build", "make"
     ]
-    
+    # Merge writing/report keywords into research
     research_keywords = [
         "research", "find", "search", "look up", "investigate", "explore",
         "study", "analyze", "examine", "review", "survey", "gather",
         "collect", "discover", "learn about", "understand", "explore",
         "market research", "competitor analysis", "user research", "embedding",
-        "models", "algorithms", "techniques", "methods", "approaches"
-    ]
-    
-    writing_keywords = [
+        "models", "algorithms", "techniques", "methods", "approaches",
+        # Former writing/report keywords:
         "write", "document", "report", "analysis", "summary", "review",
         "proposal", "plan", "strategy", "documentation", "manual",
         "guide", "tutorial", "article", "blog", "content", "copy",
@@ -177,37 +175,20 @@ def create_subtasks_for_subtask(subtask, source_message):
     # Score each category
     coding_score = sum(1 for keyword in coding_keywords if keyword in subtask_str or keyword in source_str)
     research_score = sum(1 for keyword in research_keywords if keyword in subtask_str or keyword in source_str)
-    writing_score = sum(1 for keyword in writing_keywords if keyword in subtask_str or keyword in source_str)
     
     # Create subtasks based on scores
-    subtasks = {"coding": [], "research": [], "writing": []}
+    subtasks = {"coding": [], "research": []}
     
     # If research keywords are found, prioritize research
     if research_score > 0:
         subtasks["research"] = [f"Research {subtask}"]
-        # If there are also coding keywords, add coding task
         if coding_score > 0:
             subtasks["coding"] = [f"Implement {subtask}"]
-        # If there are also writing keywords, add writing task
-        if writing_score > 0:
-            subtasks["writing"] = [f"Write {subtask}"]
-    # If coding keywords are found, prioritize coding
     elif coding_score > 0:
         subtasks["coding"] = [f"Implement {subtask}"]
-        # If there are also writing keywords, add writing task
-        if writing_score > 0:
-            subtasks["writing"] = [f"Write {subtask}"]
-    # If writing keywords are found, prioritize writing
-    elif writing_score > 0:
-        subtasks["writing"] = [f"Write {subtask}"]
-        # Research is often needed for writing
-        subtasks["research"] = [f"Research for {subtask}"]
-    # Default fallback - if no clear category, assume it's a general task that needs research
     else:
-        # For general tasks, start with research
+        # Default fallback - treat as research
         subtasks["research"] = [f"Research {subtask}"]
-        subtasks["coding"] = [f"Implement {subtask}"]
-    
     return subtasks
 
 def create_hierarchical_tasks(messages):
@@ -239,31 +220,24 @@ def save_hierarchical_tasks(hierarchical_tasks):
     structured_tasks = {}
     all_coding_tasks = []
     all_research_tasks = []
-    all_writing_tasks = []
     
     for main_task, subtask_objs in hierarchical_tasks.items():
         main_task_lower = main_task.lower()
         subtasks = []
         # Research task: just one subtask
-        if any(keyword in main_task_lower for keyword in ["research", "study", "analyze", "investigate", "embedding", "models"]):
+        if any(keyword in main_task_lower for keyword in [
+            "research", "study", "analyze", "investigate", "embedding", "models",
+            "write", "document", "report", "analysis", "summary", "review",
+            "proposal", "plan", "strategy", "documentation", "manual",
+            "guide", "tutorial", "article", "blog", "content", "copy",
+            "draft", "create document", "prepare report"
+        ]):
             subtasks = [{"task": main_task, "phase": "research"}]
             all_research_tasks.append({
                 "task": main_task,
                 "source": main_task,
                 "phase": "research",
                 "category": "research"
-            })
-        # Writing task: research + writing
-        elif any(keyword in main_task_lower for keyword in ["write", "document", "report", "analysis", "summary"]):
-            subtasks = [
-                {"task": f"Research {main_task}", "phase": "research"},
-                {"task": f"Write LaTeX document for {main_task}", "phase": "writing"}
-            ]
-            all_writing_tasks.append({
-                "task": main_task,
-                "source": main_task,
-                "phase": "writing",
-                "category": "writing"
             })
         # Coding task: all coding subtasks with phase
         else:
@@ -292,12 +266,9 @@ def save_hierarchical_tasks(hierarchical_tasks):
         json.dump(all_coding_tasks, f, indent=2)
     with open("json/research_tasks.json", "w") as f:
         json.dump(all_research_tasks, f, indent=2)
-    with open("json/writing_tasks.json", "w") as f:
-        json.dump(all_writing_tasks, f, indent=2)
     print(f"✅ Saved tasks to json/phased_tasks.json (main task as key, subtasks as array)")
     print(f"✅ Saved {len(all_coding_tasks)} coding tasks to json/coding_tasks.json")
     print(f"✅ Saved {len(all_research_tasks)} research tasks to json/research_tasks.json")
-    print(f"✅ Saved {len(all_writing_tasks)} writing tasks to json/writing_tasks.json")
 
 def categorize_tasks_by_type(tasks):
     """Categorize tasks into coding, research, and writing types"""
@@ -571,10 +542,8 @@ def main():
             coding_tasks = json.load(f)
         with open("json/research_tasks.json", "r") as f:
             research_tasks = json.load(f)
-        with open("json/writing_tasks.json", "r") as f:
-            writing_tasks = json.load(f)
         
-        all_tasks = coding_tasks + research_tasks + writing_tasks
+        all_tasks = coding_tasks + research_tasks
         create_dependency_matrix(all_tasks)
     except Exception as e:
         print(f"⚠️  Could not run dependency analysis: {e}")
@@ -583,7 +552,7 @@ def main():
     if research_tasks and len(research_tasks) > 0:
         print("🔍 Research tasks detected - generating media resources...")
         try:
-            main(auto_mode=True)
+            research_processor.main(auto_mode=True)
             print("✅ Research media generation complete")
         except Exception as e:
             print(f"⚠️  Could not generate research media: {e}")

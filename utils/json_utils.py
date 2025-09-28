@@ -8,60 +8,46 @@ import os
 import json
 
 def clear_json_files():
-    """Clear all files in json/ folder to their default states"""
+    """Clear all .json and .txt files in json/ folder to their default states"""
     try:
         # Ensure json directory exists
         os.makedirs("json", exist_ok=True)
         
-        # Clear messages.json (empty object)
-        with open("json/messages.json", "w") as f:
-            f.write("{}")
-        
-        # Clear phased_tasks.json (empty array)
-        with open("json/phased_tasks.json", "w") as f:
-            f.write("[]")
-        
-        # Clear last_processed_ts.txt (empty string)
-        with open("json/last_processed_ts.txt", "w") as f:
-            f.write("")
-        
-        # Clear last_task_processed_ts.txt (empty string)
-        with open("json/last_task_processed_ts.txt", "w") as f:
-            f.write("")
-        
-        # Clear task_dependencies.json (empty object)
-        with open("json/task_dependencies.json", "w") as f:
-            f.write("{}")
-        
-        # Clear dependency_matrix.json (empty object)
-        with open("json/dependency_matrix.json", "w") as f:
-            f.write("{}")
-        
-        # Clear media.json (empty object with proper structure)
-        empty_media = {
-            "research_topics": {},
-            "summary": {
-                "total_research_topics": 0,
-                "total_media_resources": 0,
-                "last_updated": ""
-            }
-        }
-        with open("json/media.json", "w") as f:
-            json.dump(empty_media, f, indent=2)
-        
-        # Clear session marker (will be recreated on next run)
-        try:
-            if os.path.exists("json/session_active.txt"):
-                os.remove("json/session_active.txt")
-        except:
-            pass
-        
-        # Clean up project_embeddings.json to only include existing projects
-        cleanup_project_embeddings()
-        
+        # List all .json and .txt files in the json/ directory
+        for filename in os.listdir("json"):
+            filepath = os.path.join("json", filename)
+            if not os.path.isfile(filepath):
+                continue
+            if filename == "media.json":
+                # Reset media.json to default structure
+                empty_media = {
+                    "research_topics": {},
+                    "summary": {
+                        "total_research_topics": 0,
+                        "total_media_resources": 0,
+                        "last_updated": ""
+                    }
+                }
+                with open(filepath, "w") as f:
+                    json.dump(empty_media, f, indent=2)
+            elif filename == "project_embeddings.json":
+                # Clear project_embeddings.json to empty object
+                with open(filepath, "w") as f:
+                    f.write("{}")
+            elif filename.endswith(".json"):
+                # Clear all other .json files to empty object
+                with open(filepath, "w") as f:
+                    f.write("{}")
+            elif filename.endswith(".txt"):
+                # Clear all .txt files to empty string
+                with open(filepath, "w") as f:
+                    f.write("")
+        # Remove session marker if exists
+        session_marker = os.path.join("json", "session_active.txt")
+        if os.path.exists(session_marker):
+            os.remove(session_marker)
         print("🧹 Cleared all json/ files to default states")
         return True
-        
     except Exception as e:
         print(f"❌ Error clearing json/ files: {e}")
         return False
@@ -203,6 +189,25 @@ def print_json_status():
         print(f"  {filename}: {file_status}")
     
     print("=" * 50)
+
+def clear_task_json_files():
+    """Clear only the coding_tasks.json, research_tasks.json, and writing_tasks.json files (set to empty lists)"""
+    try:
+        os.makedirs("json", exist_ok=True)
+        task_files = [
+            "coding_tasks.json",
+            "research_tasks.json",
+            "writing_tasks.json"
+        ]
+        for filename in task_files:
+            filepath = os.path.join("json", filename)
+            with open(filepath, "w") as f:
+                json.dump([], f, indent=2)
+            print(f"✅ Cleared {filename}")
+        return True
+    except Exception as e:
+        print(f"❌ Error clearing task json files: {e}")
+        return False
 
 if __name__ == "__main__":
     # Test the utility functions

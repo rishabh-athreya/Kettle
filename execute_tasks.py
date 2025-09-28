@@ -3,10 +3,10 @@ import os
 import subprocess
 import time
 from datetime import datetime
-from keys import ANTHROPIC_API_KEY
+from utils.keys import ANTHROPIC_API_KEY
 import tempfile
 import requests
-from prompts import execute_tasks_prompt, modify_existing_file_prompt
+from utils.prompts import execute_tasks_prompt, modify_existing_file_prompt
 from project_matcher import *
 
 PHASE_ORDER = ["project_setup", "dependency_installation", "feature_implementation"]

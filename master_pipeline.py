@@ -8,11 +8,11 @@ import psutil
 from datetime import datetime
 import threading
 from extract_tasks import *
-from execute import *
+from execute_tasks import *
 from research_processor import *
 from dependency_analyzer import *
 from project_matcher import *
-from json_utils import *
+from utils.json_utils import *
 
 # Add the current directory to the path so we can import the modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -109,10 +109,10 @@ def run_main_pipeline():
         
         if closest_project:
             print(f"   📁 Using existing project: {closest_project}")
-            execute.main(existing_project_folder=closest_project)
+            execute_tasks.main(existing_project_folder=closest_project)
         else:
             print("   🆕 Creating new project")
-            execute.main()
+            execute_tasks.main()
     else:
         print("💻 No coding tasks found - skipping coding execution")
     
@@ -130,6 +130,8 @@ def run_main_pipeline():
     else:
         print("✍️  No writing tasks found")
     
+    # Clear only the task files at the end of the pipeline
+    json_utils.clear_task_json_files()
     print("✅ KettleAI pipeline completed!")
 
 def run_dashboard():

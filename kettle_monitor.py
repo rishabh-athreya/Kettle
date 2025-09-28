@@ -20,6 +20,12 @@ import queue
 import requests
 import slack_fetch
 import extract_tasks
+import dependency_analyzer
+import project_matcher
+
+# Import clear_json_files and call it at startup
+from utils.json_utils import clear_json_files
+clear_json_files()
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 

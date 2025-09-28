@@ -41,3 +41,4 @@ transformers==4.52.4
 typing_extensions==4.14.0
 urllib3==2.4.0
 Werkzeug==3.1.3
+pymongo==4.6.1

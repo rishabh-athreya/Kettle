@@ -1,7 +1,7 @@
 import json
 import requests
 import os
-from keys import ANTHROPIC_API_KEY
+from utils.keys import ANTHROPIC_API_KEY
 import uuid
 
 # Use the modern messages endpoint
@@ -157,10 +157,6 @@ def create_dependency_matrix(tasks):
         os.makedirs("json", exist_ok=True)
         with open("json/dependency_matrix.json", "w") as f:
             json.dump(dependency_matrix, f, indent=2)
-        
-        # Also update the tasks file with any generated IDs
-        with open("json/phased_tasks.json", "w") as f:
-            json.dump(tasks, f, indent=2)
         
         print(f"✅ Dependency matrix created with {len(transformed_dependencies)} task relationships")
         return dependency_matrix

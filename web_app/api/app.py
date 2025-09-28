@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import json
 import os
@@ -55,22 +55,26 @@ def transform_task(task_data: Dict[str, Any]) -> Dict[str, Any]:
         'user': task_data.get('user')
     }
 
+def all_coding_tasks_executed(tasks_data):
+    """Return True if all coding tasks are executed, False otherwise."""
+    if not isinstance(tasks_data, list):
+        return False
+    coding_tasks = [task for task in tasks_data if task.get('category', 'coding') == 'coding']
+    return all(task.get('selectionStatus') == 'executed' for task in coding_tasks) if coding_tasks else False
+
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
-    """Get coding tasks from phased_tasks.json"""
+    """Get coding tasks first; only return research tasks if all coding tasks are executed."""
     try:
         tasks_data = load_json_file('phased_tasks.json')
-        
-        # Transform the data to match frontend expectations
-        tasks = []
-        if isinstance(tasks_data, list):
-            for task in tasks_data:
-                # Only include coding tasks or tasks without category (backward compatibility)
-                task_category = task.get('category', 'coding')  # Default to coding for backward compatibility
-                if task_category == 'coding':
-                    transformed_task = transform_task(task)
-                    tasks.append(transformed_task)
-        
+        if not isinstance(tasks_data, list):
+            return jsonify([])
+        if not all_coding_tasks_executed(tasks_data):
+            # Return only coding tasks
+            tasks = [transform_task(task) for task in tasks_data if task.get('category', 'coding') == 'coding']
+        else:
+            # Return only research tasks
+            tasks = [transform_task(task) for task in tasks_data if task.get('category') == 'research']
         return jsonify(tasks)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -202,7 +206,7 @@ def execute_selected_tasks():
             
             # Execute the selected tasks using the virtual environment's Python interpreter
             result = subprocess.run([
-                VENV_PYTHON, 'utils/execute.py'
+                VENV_PYTHON, 'execute_tasks.py'
             ], capture_output=True, text=True, timeout=300)  # 5 minute timeout
             
             # Check if files were actually created (success indicator)
@@ -351,20 +355,38 @@ def reset_media():
 
 @app.route('/api/research-resources', methods=['GET'])
 def get_research_resources():
-    """Get all research resources from media.json"""
+    """Get all research resources from media.json, but only if all coding tasks are executed."""
     try:
+        tasks_data = load_json_file('phased_tasks.json')
+        if not all_coding_tasks_executed(tasks_data):
+            return jsonify([])  # Hide research resources until coding is done
         media_data = load_json_file('media.json')
-        # Return the research_topics dict as a flat list of resources
         resources = []
         if isinstance(media_data, dict) and 'research_topics' in media_data:
             for topic in media_data['research_topics'].values():
                 for resource in topic.get('media_links', []):
-                    # Attach the research_task/topic for context
                     resource['research_task'] = topic.get('research_task', '')
                     resources.append(resource)
         return jsonify(resources)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/writing/<path:filename>', methods=['GET'])
+def serve_writing_file(filename):
+    """Serve LaTeX or PDF writing report files from json/writing/"""
+    writing_dir = os.path.join(KETTLE_DATA_DIR, 'writing')
+    return send_from_directory(writing_dir, filename, as_attachment=False)
+
+@app.route('/api/writing_tasks', methods=['GET'])
+def get_writing_tasks():
+    """Return all writing tasks, including report_path."""
+    try:
+        tasks_data = load_json_file('writing_tasks.json')
+        if not isinstance(tasks_data, list):
+            tasks_data = []
+        return jsonify(tasks_data)
+    except Exception as e:
+        return jsonify([]), 200  # Return empty array on error
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001) 

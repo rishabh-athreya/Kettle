@@ -8,10 +8,10 @@ from slack_sdk.errors import SlackApiError
 import subprocess
 import sys
 
-# You can set these in your environment or in keys.py
+# You can set these in your environment or in utils/keys.py
 try:
-    from keys import SLACK_BOT_TOKEN, SLACK_CHANNEL_ID, BOT_USER_ID
-except ImportError:
+    from utils.keys import SLACK_BOT_TOKEN, SLACK_CHANNEL_ID, BOT_USER_ID
+except Exception:
     SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
     SLACK_CHANNEL_ID = os.environ.get("SLACK_CHANNEL_ID")
     BOT_USER_ID = os.environ.get("BOT_USER_ID")

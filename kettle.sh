@@ -5,6 +5,21 @@
 
 echo "🚀 Starting Kettle AI Services..."
 
+# Function to kill processes using specific ports
+kill_ports() {
+    PORTS=(3000 5000 7860)
+    for PORT in "${PORTS[@]}"; do
+        PIDS=$(lsof -ti tcp:$PORT)
+        if [ ! -z "$PIDS" ]; then
+            echo "🔪 Killing processes on port $PORT: $PIDS"
+            kill -9 $PIDS 2>/dev/null
+        fi
+    done
+}
+
+# Kill any processes using needed ports before starting
+kill_ports
+
 # Function to kill background processes on exit
 cleanup() {
     echo "🛑 Shutting down Kettle AI services..."

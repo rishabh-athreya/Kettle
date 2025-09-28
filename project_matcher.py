@@ -3,8 +3,13 @@ import json
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+from mongodb_config import get_embedding_manager, get_mongodb_config
+import logging
 
-EMBEDDINGS_PATH = os.path.join("json", "project_embeddings.json")
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 MODEL_NAME = "all-MiniLM-L6-v2"
 SIMILARITY_THRESHOLD = 0.2
 
@@ -43,70 +48,179 @@ def load_codebase(project_folder):
     return codebase
 
 def compute_embedding(messages):
+    """Compute embedding for messages using the sentence transformer model"""
     if isinstance(messages, str):
         messages = [messages]
     return model.encode([" ".join(messages)], normalize_embeddings=True)[0].tolist()
 
 def save_project_embedding(folder, messages):
-    folder_name = os.path.basename(os.path.normpath(folder))
-    
-    if os.path.exists(EMBEDDINGS_PATH):
-        with open(EMBEDDINGS_PATH, "r") as f:
-            data = json.load(f)
-    else:
-        data = {}
-    
-    # Check if project already exists
-    if folder_name in data:
-        # Append new messages to existing ones
-        existing_messages = data[folder_name]["messages"]
-        if isinstance(existing_messages, list):
-            # Combine existing and new messages, avoiding duplicates
-            all_messages = existing_messages + [msg for msg in messages if msg not in existing_messages]
+    """Save project embedding to MongoDB"""
+    try:
+        folder_name = os.path.basename(os.path.normpath(folder))
+        
+        # Get the embedding manager
+        embedding_manager = get_embedding_manager()
+        
+        # Compute embedding
+        embedding = compute_embedding(messages)
+        
+        # Infer project type from folder path and messages
+        project_type = _infer_project_type(folder, messages)
+        
+        # Save to MongoDB
+        success = embedding_manager.save_project_embedding(
+            project_name=folder_name,
+            folder_path=folder,
+            messages=messages,
+            embedding=embedding,
+            project_type=project_type,
+            metadata={
+                "source": "project_matcher",
+                "model": MODEL_NAME,
+                "similarity_threshold": SIMILARITY_THRESHOLD
+            }
+        )
+        
+        if success:
+            logger.info(f"✅ Saved embedding for project: {folder_name}")
         else:
-            # If existing_messages is not a list, convert it and add new messages
-            all_messages = [existing_messages] + messages
+            logger.warning(f"⚠️  Failed to save embedding for project: {folder_name}")
+            
+    except Exception as e:
+        logger.error(f"❌ Error saving project embedding: {e}")
+        # Fallback to JSON if MongoDB fails
+        _save_to_json_fallback(folder, messages)
+
+def _infer_project_type(folder_path, messages):
+    """Infer project type from folder path and messages"""
+    folder_lower = folder_path.lower()
+    messages_text = " ".join(messages).lower()
+    
+    if any(keyword in folder_lower or keyword in messages_text for keyword in ["game", "pygame", "flappy", "tic-tac-toe"]):
+        return "game"
+    elif any(keyword in folder_lower or keyword in messages_text for keyword in ["web", "flask", "app", "website", "api"]):
+        return "web_app"
+    elif any(keyword in folder_lower or keyword in messages_text for keyword in ["script", "automation", "tool"]):
+        return "script"
+    elif any(keyword in folder_lower or keyword in messages_text for keyword in ["research", "analysis", "report"]):
+        return "research"
     else:
-        # New project, use the provided messages
-        all_messages = messages
-    
-    # Compute embedding based on all messages
-    embedding = compute_embedding(all_messages)
-    
-    # Update or create the project entry
-    data[folder_name] = {
-        "embedding": embedding,
-        "messages": all_messages,
-        "folder": folder
-    }
-    
-    with open(EMBEDDINGS_PATH, "w") as f:
-        json.dump(data, f, indent=2)
+        return "unknown"
+
+def _save_to_json_fallback(folder, messages):
+    """Fallback to JSON storage if MongoDB fails"""
+    try:
+        folder_name = os.path.basename(os.path.normpath(folder))
+        embeddings_path = os.path.join("json", "project_embeddings.json")
+        
+        if os.path.exists(embeddings_path):
+            with open(embeddings_path, "r") as f:
+                data = json.load(f)
+        else:
+            data = {}
+        
+        # Compute embedding
+        embedding = compute_embedding(messages)
+        
+        # Update or create the project entry
+        data[folder_name] = {
+            "embedding": embedding,
+            "messages": messages,
+            "folder": folder
+        }
+        
+        with open(embeddings_path, "w") as f:
+            json.dump(data, f, indent=2)
+            
+        logger.info(f"✅ Fallback: Saved to JSON for project: {folder_name}")
+        
+    except Exception as e:
+        logger.error(f"❌ Fallback JSON save also failed: {e}")
 
 def load_all_project_embeddings():
-    if not os.path.exists(EMBEDDINGS_PATH):
+    """Load all project embeddings from MongoDB (fallback to JSON if needed)"""
+    try:
+        embedding_manager = get_embedding_manager()
+        projects = embedding_manager.get_all_projects()
+        
+        # Convert to the old format for backward compatibility
+        result = {}
+        for project in projects:
+            result[project["project_name"]] = {
+                "embedding": project["embedding"],
+                "messages": project["messages"],
+                "folder": project["folder_path"]
+            }
+        return result
+        
+    except Exception as e:
+        logger.warning(f"⚠️  MongoDB failed, falling back to JSON: {e}")
+        # Fallback to JSON
+        embeddings_path = os.path.join("json", "project_embeddings.json")
+        if os.path.exists(embeddings_path):
+            with open(embeddings_path, "r") as f:
+                return json.load(f)
         return {}
-    with open(EMBEDDINGS_PATH, "r") as f:
-        return json.load(f)
 
 def find_closest_project(messages):
-    new_emb = np.array(compute_embedding(messages)).reshape(1, -1)
-    all_projects = load_all_project_embeddings()
-    if not all_projects:
+    """Find the closest project using MongoDB with fallback to JSON"""
+    try:
+        # Try MongoDB first
+        embedding_manager = get_embedding_manager()
+        query_embedding = compute_embedding(messages)
+        
+        # Find similar projects
+        similar_projects = embedding_manager.find_similar_projects(
+            query_embedding=query_embedding,
+            limit=10,
+            similarity_threshold=SIMILARITY_THRESHOLD
+        )
+        
+        if similar_projects:
+            best_match = similar_projects[0]
+            logger.info(f"✅ Found similar project via MongoDB: {best_match['project_name']} (similarity: {best_match['similarity']:.4f})")
+            return best_match["folder_path"], best_match["similarity"]
+        else:
+            logger.info("📭 No similar projects found in MongoDB")
+            return None, 0.0
+            
+    except Exception as e:
+        logger.warning(f"⚠️  MongoDB search failed, falling back to JSON: {e}")
+        # Fallback to JSON-based search
+        return _find_closest_project_json_fallback(messages)
+
+def _find_closest_project_json_fallback(messages):
+    """Fallback method using JSON file for finding closest project"""
+    try:
+        new_emb = np.array(compute_embedding(messages)).reshape(1, -1)
+        all_projects = load_all_project_embeddings()
+        
+        if not all_projects:
+            logger.info("📭 No projects found in JSON fallback")
+            return None, 0.0
+            
+        best_project = None
+        best_score = -1
+        
+        logger.info("[DEBUG] Embedding similarity scores (JSON fallback):")
+        for name, info in all_projects.items():
+            emb = np.array(info["embedding"]).reshape(1, -1)
+            score = cosine_similarity(new_emb, emb)[0][0]
+            logger.info(f"  - {name}: {score:.4f}")
+            if score > best_score:
+                best_score = score
+                best_project = (name, info["folder"])
+                
+        if best_score >= SIMILARITY_THRESHOLD:
+            logger.info(f"✅ Found similar project via JSON: {best_project[0]} (similarity: {best_score:.4f})")
+            return best_project[1], best_score
+        else:
+            logger.info(f"❌ No similar project found (best similarity: {best_score:.4f})")
+            return None, best_score
+            
+    except Exception as e:
+        logger.error(f"❌ JSON fallback also failed: {e}")
         return None, 0.0
-    best_project = None
-    best_score = -1
-    print("[DEBUG] Embedding similarity scores:")
-    for name, info in all_projects.items():
-        emb = np.array(info["embedding"]).reshape(1, -1)
-        score = cosine_similarity(new_emb, emb)[0][0]
-        print(f"  - {name}: {score:.4f}")
-        if score > best_score:
-            best_score = score
-            best_project = (name, info["folder"])
-    if best_score >= SIMILARITY_THRESHOLD:
-        return best_project[1], best_score
-    return None, best_score
 
 def main():
     # Read messages from json/messages.json

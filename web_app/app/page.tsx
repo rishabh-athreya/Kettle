@@ -34,38 +34,18 @@ export default function Dashboard() {
     totalMessages: 0
   })
   const [resources, setResources] = useState<ResearchResource[]>([])
+  const [writingTasks, setWritingTasks] = useState<Task[]>([])
   
-  // Phase detection logic
-  const [currentPhase, setCurrentPhase] = useState<'coding' | 'research' | 'none'>('none')
-  
-  // Determine current phase based on task states and research resources
-  const determinePhase = useCallback(() => {
-    const hasCodingTasks = tasks.length > 0
-    const hasExecutedCodingTasks = tasks.some(task => task.selectionStatus === 'executed')
-    const hasResearchResources = resources.length > 0
-    
-    if (hasResearchResources && (hasExecutedCodingTasks || !hasCodingTasks)) {
-      setCurrentPhase('research')
-    } else if (hasCodingTasks) {
-      setCurrentPhase('coding')
-    } else {
-      setCurrentPhase('none')
-    }
-  }, [tasks, resources])
-  
-  // Update phase whenever tasks or resources change
-  useEffect(() => {
-    determinePhase()
-  }, [tasks, resources, determinePhase])
-
   useEffect(() => {
     fetchData()
     fetchResearchResources()
+    fetchWritingTasks()
     // Set up polling for real-time updates - reduced to 10 seconds
     const interval = setInterval(() => {
       console.log('Auto-refreshing data...')
       fetchData()
       fetchResearchResources()
+      fetchWritingTasks()
     }, 10000)
     return () => clearInterval(interval)
   }, [])
@@ -122,6 +102,18 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Error fetching research resources:', error)
+    }
+  }
+
+  const fetchWritingTasks = async () => {
+    try {
+      const res = await fetch('/api/writing_tasks')
+      if (res.ok) {
+        const data = await res.json()
+        setWritingTasks(data)
+      }
+    } catch (error) {
+      console.error('Error fetching writing tasks:', error)
     }
   }
 
@@ -291,6 +283,50 @@ export default function Dashboard() {
     }
   }
 
+  // Render research/writing section (simplified for clarity)
+  const renderResearchSection = () => (
+    <div className="mt-8">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Research Resources</h2>
+        <button
+          onClick={handleOpenAllResources}
+          disabled={resources.length === 0}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:opacity-50 text-white rounded-md transition-colors"
+        >
+          <span>Open All in Browser</span>
+        </button>
+      </div>
+      {/* Writing report link, if present */}
+      {writingTasks.map((task, idx) =>
+        task.report_path ? (
+          <div key={idx} className="mb-2">
+            <a
+              href={`/api/writing/${encodeURIComponent(task.report_path.split('/').pop() || '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              📄 View LaTeX Report: {task.task}
+            </a>
+          </div>
+        ) : null
+      )}
+      {/* Render research resources as widgets */}
+      {resources.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <span className="block mb-2">No research resources found yet.</span>
+          <span className="text-xs">Research resources will appear here after research tasks are processed.</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {resources.map((resource, idx) => (
+            <ResearchResourceCard key={resource.url + idx} resource={resource} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -318,18 +354,16 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              {currentPhase === 'coding' && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleExecuteSelected}
-                  disabled={executing || stats.selectedTasks === 0}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white rounded-md transition-colors"
-                >
-                  <Play className={`h-4 w-4 ${executing ? 'animate-spin' : ''}`} />
-                  <span>{executing ? 'Executing...' : `Execute Selected (${stats.selectedTasks})`}</span>
-                </motion.button>
-              )}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleExecuteSelected}
+                disabled={executing || stats.selectedTasks === 0}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white rounded-md transition-colors"
+              >
+                <Play className={`h-4 w-4 ${executing ? 'animate-spin' : ''}`} />
+                <span>{executing ? 'Executing...' : `Execute Selected (${stats.selectedTasks})`}</span>
+              </motion.button>
               <button
                 onClick={handleReset}
                 className="flex items-center space-x-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-md transition-colors"
@@ -340,197 +374,101 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
-            Last updated: {lastUpdate.toLocaleTimeString()} • Auto-refresh every 10 seconds • 
-            {currentPhase === 'coding' ? ' Continuous Slack monitoring' : ' Research phase active'}
+            Last updated: {lastUpdate.toLocaleTimeString()} • Auto-refresh every 10 seconds
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Phase Indicator */}
-        <div className="mb-6">
-          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium">
-            {currentPhase === 'coding' && (
-              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                💻 Coding Phase
-              </span>
-            )}
-            {currentPhase === 'research' && (
-              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                🔍 Research Phase
-              </span>
-            )}
-            {currentPhase === 'none' && (
-              <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                ⏳ Waiting for tasks...
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Stats Grid - Only show in coding phase */}
-        {currentPhase === 'coding' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatsCard
-              title="Total Tasks"
-              value={stats.totalTasks}
-              icon={Zap}
-              color="blue"
-            />
-            <StatsCard
-              title="Selected"
-              value={stats.selectedTasks}
-              icon={CheckCircle}
-              color="green"
-            />
-            <StatsCard
-              title="Pending Selection"
-              value={stats.pendingSelection}
-              icon={Clock}
-              color="yellow"
-            />
-            <StatsCard
-              title="Executed"
-              value={stats.executedTasks}
-              icon={Play}
-              color="purple"
-            />
-          </div>
-        )}
-
-        {/* Main Content Grid */}
-        {currentPhase === 'coding' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Task History */}
-            <div className="lg:col-span-2">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="bg-card rounded-lg border border-border p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-foreground">Task Selection</h2>
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <TrendingUp className="h-4 w-4" />
-                        <span>Select tasks to execute</span>
-                      </div>
-                      {tasks.filter(task => task.selectionStatus === 'pending').length > 0 && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={handleSelectAll}
-                          className="approval-button approve"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Select All
-                        </motion.button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {tasks.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Coffee className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No tasks yet. Kettle is monitoring Slack for new messages...</p>
-                      </div>
-                    ) : (
-                      tasks.map((task, index) => (
-                        <motion.div
-                          key={task.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.1 }}
-                        >
-                          <TaskCard
-                            task={task}
-                            onSelection={handleTaskSelection}
-                          />
-                        </motion.div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Recent Messages */}
-            <div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <div className="bg-card rounded-lg border border-border p-6">
-                  <h2 className="text-xl font-semibold text-foreground mb-6">Recent Messages</h2>
-                  
-                  <div className="space-y-4">
-                    {messages.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No messages yet</p>
-                      </div>
-                    ) : (
-                      messages.slice(0, 5).map((message, index) => (
-                        <motion.div
-                          key={message.ts}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.1 }}
-                        >
-                          <MessageCard message={message} />
-                        </motion.div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        ) : (
-          /* Research Phase - Show only research resources prominently */
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-foreground mb-4">
-              {currentPhase === 'research' ? 'Research Resources Ready!' : 'Welcome to Kettle AI'}
-            </h2>
-            <p className="text-muted-foreground">
-              {currentPhase === 'research' 
-                ? 'Coding tasks completed. Here are your research resources to help with the next phase.'
-                : 'Waiting for tasks to be processed...'
-              }
-            </p>
-          </div>
-        )}
-
-        {/* Research Resources Section - Always show, but more prominent in research phase */}
-        <div className={`${currentPhase === 'research' ? 'mt-8' : 'mt-12'}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-foreground">
-              {currentPhase === 'research' ? '📚 Research Resources' : 'Research Resources'}
-            </h2>
-            <button
-              onClick={handleOpenAllResources}
-              disabled={resources.length === 0}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:opacity-50 text-white rounded-md transition-colors"
+        {/* Coding Tasks Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Task History */}
+          <div className="lg:col-span-2">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
             >
-              <span>Open All in Browser</span>
-            </button>
+              <div className="bg-card rounded-lg border border-border p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-foreground">Task Selection</h2>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                      <TrendingUp className="h-4 w-4" />
+                      <span>Select tasks to execute</span>
+                    </div>
+                    {tasks.filter(task => task.selectionStatus === 'pending').length > 0 && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleSelectAll}
+                        className="approval-button approve"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Select All
+                      </motion.button>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {tasks.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Coffee className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No tasks yet. Kettle is monitoring Slack for new messages...</p>
+                    </div>
+                  ) : (
+                    tasks.map((task, index) => (
+                      <motion.div
+                        key={task.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                      >
+                        <TaskCard
+                          task={task}
+                          onSelection={handleTaskSelection}
+                        />
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </motion.div>
           </div>
-          {resources.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <span className="block mb-2">No research resources found yet.</span>
-              <span className="text-xs">Research resources will appear here after research tasks are processed. Research tasks can be processed independently or after coding tasks.</span>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {resources.map((resource, idx) => (
-                <ResearchResourceCard key={resource.url + idx} resource={resource} />
-              ))}
-            </div>
-          )}
+          {/* Recent Messages */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <div className="bg-card rounded-lg border border-border p-6">
+                <h2 className="text-xl font-semibold text-foreground mb-6">Recent Messages</h2>
+                <div className="space-y-4">
+                  {messages.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No messages yet</p>
+                    </div>
+                  ) : (
+                    messages.slice(0, 5).map((message, index) => (
+                      <motion.div
+                        key={message.ts}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                      >
+                        <MessageCard message={message} />
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
+        {/* Research Resources Section */}
+        {renderResearchSection()}
       </div>
     </div>
   )
