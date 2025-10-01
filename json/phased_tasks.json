@@ -1,1 +1,28 @@
-{}
+{
+  "Create Can you please devleop a simple flappy bird game for the upcoming bootcamp": [
+    {
+      "task": "Implement Set up game development environment",
+      "phase": "feature_implementation"
+    },
+    {
+      "task": "Implement Install game development libraries",
+      "phase": "dependency_installation"
+    },
+    {
+      "task": "Implement Create game assets and sprites",
+      "phase": "project_setup"
+    },
+    {
+      "task": "Implement Implement bird physics and controls",
+      "phase": "feature_implementation"
+    },
+    {
+      "task": "Implement Add obstacle generation and collision",
+      "phase": "feature_implementation"
+    },
+    {
+      "task": "Implement Implement scoring system",
+      "phase": "feature_implementation"
+    }
+  ]
+}

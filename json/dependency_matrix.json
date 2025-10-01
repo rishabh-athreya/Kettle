@@ -1,1 +1,35 @@
-{}
+{
+  "dependencies": {
+    "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0": [],
+    "a2f27739-bea9-5cc7-a790-7f3650ba1c67": [
+      "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0"
+    ],
+    "f0c9ff7b-6d46-5e88-8b42-b0fbeb4e0a82": [],
+    "82669787-62a6-5fe8-bd48-4246d5017438": [
+      "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0",
+      "a2f27739-bea9-5cc7-a790-7f3650ba1c67",
+      "f0c9ff7b-6d46-5e88-8b42-b0fbeb4e0a82"
+    ],
+    "fc8a3bfe-2ef4-58c7-915e-bc46fb459492": [
+      "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0",
+      "a2f27739-bea9-5cc7-a790-7f3650ba1c67",
+      "f0c9ff7b-6d46-5e88-8b42-b0fbeb4e0a82",
+      "82669787-62a6-5fe8-bd48-4246d5017438"
+    ],
+    "d9c4dca3-daf0-56d6-9758-926fcdfe642f": [
+      "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0",
+      "a2f27739-bea9-5cc7-a790-7f3650ba1c67",
+      "82669787-62a6-5fe8-bd48-4246d5017438",
+      "fc8a3bfe-2ef4-58c7-915e-bc46fb459492"
+    ]
+  },
+  "explanations": {
+    "e927a80c-ef1e-5578-9f1e-cf8910b6f3f0": "No dependencies - this is the foundational setup task",
+    "a2f27739-bea9-5cc7-a790-7f3650ba1c67": "Depends on task 1 because libraries need to be installed into the configured environment",
+    "f0c9ff7b-6d46-5e88-8b42-b0fbeb4e0a82": "No dependencies - asset creation can be done independently",
+    "82669787-62a6-5fe8-bd48-4246d5017438": "Depends on tasks 1, 2 for the development environment and libraries, and 3 for the sprites needed for the bird",
+    "fc8a3bfe-2ef4-58c7-915e-bc46fb459492": "Depends on tasks 1-4 as obstacles need the environment, libraries, assets, and working bird physics to implement collision detection",
+    "d9c4dca3-daf0-56d6-9758-926fcdfe642f": "Depends on tasks 1, 2 for the environment setup, 4 for player actions, and 5 for detecting successful navigation through obstacles"
+  },
+  "analyzed_at": "2024-01-01T00:00:00Z"
+}
