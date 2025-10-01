@@ -57,13 +57,13 @@ class MongoDBConfig:
     
     def get_collection(self, collection_name: str) -> Collection:
         """Get a collection from the database"""
-        if not self.database:
+        if self.database is None:
             raise RuntimeError("Database not connected")
         return self.database[collection_name]
     
     def close(self):
         """Close the MongoDB connection"""
-        if self.client:
+        if self.client is not None:
             self.client.close()
             logger.info("🔌 MongoDB connection closed")
 
