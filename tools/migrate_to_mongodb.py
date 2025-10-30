@@ -8,7 +8,7 @@ import os
 import json
 import sys
 from datetime import datetime
-from mongodb_config import get_embedding_manager, get_mongodb_config, cleanup_mongodb_connections
+from tools.mongodb_config import get_embedding_manager, get_mongodb_config, cleanup_mongodb_connections
 
 def check_mongodb_connection():
     """Check if MongoDB is available and accessible"""
@@ -125,15 +125,13 @@ def verify_migration():
         print("🧪 Testing similarity search...")
         test_messages = ["Create a simple web app", "Build a game", "Make a script"]
         
-        for test_msg in test_messages:
-            similar = embedding_manager.find_similar_projects(
-                query_embedding=embedding_manager._cosine_similarity(
-                    embedding_manager._compute_embedding([test_msg]),
-                    projects[0]["embedding"] if projects else [0.0] * 384
-                ),
-                limit=3
-            )
-            print(f"  Query: '{test_msg}' -> Found {len(similar)} similar projects")
+        # Note: this is a smoke check; production similarity lives in tools.project_matcher
+        similar = embedding_manager.find_similar_projects(
+            query_embedding=projects[0]["embedding"] if projects else [0.0] * 384,
+            limit=3,
+            similarity_threshold=0.1
+        )
+        print(f"  Similarity search returned {len(similar)} candidates")
         
         print("✅ Migration verification completed")
         return True
@@ -166,7 +164,7 @@ def main():
     print("=" * 50)
     
     # Check if we're in the right directory
-    if not os.path.exists("json") or not os.path.exists("project_matcher.py"):
+    if not os.path.exists("json") or not os.path.exists("tools/project_matcher.py"):
         print("❌ Please run this script from the Kettle AI root directory")
         sys.exit(1)
     

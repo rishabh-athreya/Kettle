@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "task": "Implement Set up game development environment",
+    "source": "Create a flappy bird game for the upcoming bootcamp",
+    "phase": "project_setup",
+    "category": "coding"
+  },
+  {
+    "task": "Implement Install game development libraries",
+    "source": "Create a flappy bird game for the upcoming bootcamp",
+    "phase": "dependency_installation",
+    "category": "coding"
+  },
+  {
+    "task": "Implement Create game assets and sprites",
+    "source": "Create a flappy bird game for the upcoming bootcamp",
+    "phase": "project_setup",
+    "category": "coding"
+  },
+  {
+    "task": "Implement Bird physics and controls",
+    "source": "Create a flappy bird game for the upcoming bootcamp",
+    "phase": "feature_implementation",
+    "category": "coding"
+  },
+  {
+    "task": "Implement Obstacle generation and collision",
+    "source": "Create a flappy bird game for the upcoming bootcamp",
+    "phase": "feature_implementation",
+    "category": "coding"
+  },
+  {
+    "task": "Implement Scoring system and game over logic",
+    "source": "Create a flappy bird game for the upcoming bootcamp",
+    "phase": "feature_implementation",
+    "category": "coding"
+  }
+]

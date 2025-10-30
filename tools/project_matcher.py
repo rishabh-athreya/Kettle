@@ -3,7 +3,7 @@ import json
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from mongodb_config import get_embedding_manager, get_mongodb_config
+from tools.mongodb_config import get_embedding_manager, get_mongodb_config
 import logging
 
 # Configure logging
@@ -243,4 +243,4 @@ def main():
         return None, similarity
 
 if __name__ == "__main__":
-    main() 
+    main()

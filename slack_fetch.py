@@ -58,33 +58,54 @@ def save_messages(messages, path="json/messages.json", since_ts=None):
     # Only keep messages not sent by the bot itself
     filtered = [m for m in messages if m.get("user") != BOT_USER_ID]
     
-    # Format messages for saving
-    formatted_messages = []
+    # Format messages for saving (new batch)
+    new_batch = []
     for msg in filtered:
-        formatted_messages.append({
+        new_batch.append({
             "text": msg.get("text", ""), 
             "user": msg.get("user", ""), 
             "ts": msg.get("ts", "")
         })
     
+    # Load existing messages (append mode)
+    try:
+        with open(path, "r") as f:
+            existing = json.load(f).get("messages", [])
+    except (FileNotFoundError, json.JSONDecodeError):
+        existing = []
+    
+    # Merge and de-duplicate by ts (keep latest occurrence)
+    combined_map = {m.get("ts", ""): m for m in existing if m.get("ts")}
+    for m in new_batch:
+        ts = m.get("ts")
+        if ts:
+            combined_map[ts] = m
+    combined = list(combined_map.values())
+    
     # Sort by timestamp (newest first)
-    formatted_messages.sort(key=lambda x: float(x.get("ts", 0)), reverse=True)
+    try:
+        combined.sort(key=lambda x: float(x.get("ts", 0)), reverse=True)
+    except Exception:
+        pass
     
     # Create the complete messages structure
-    formatted = {"messages": formatted_messages}
+    formatted = {"messages": combined}
     
-    # Always save the complete messages (replace existing file)
+    # Save merged messages
     with open(path, "w") as f:
         json.dump(formatted, f, indent=2)
     
-    print(f"Saved {len(formatted_messages)} messages (completely replaced messages.json)")
+    print(f"Saved {len(new_batch)} new messages, total now {len(combined)} (append mode)")
     
     # Update the last processed timestamp to the latest message
-    if formatted_messages:
-        latest_ts = float(formatted_messages[0]["ts"])
-        with open("json/last_processed_ts.txt", "w") as f:
-            f.write(str(latest_ts))
-        print(f"Updated last processed timestamp to: {latest_ts}")
+    if combined:
+        try:
+            latest_ts = float(combined[0].get("ts", 0))
+            with open("json/last_processed_ts.txt", "w") as f:
+                f.write(str(latest_ts))
+            print(f"Updated last processed timestamp to: {latest_ts}")
+        except Exception:
+            pass
     else:
         print("No messages found to save")
 

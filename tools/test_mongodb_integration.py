@@ -8,7 +8,7 @@ import os
 import sys
 import json
 from datetime import datetime
-from mongodb_config import get_embedding_manager, get_mongodb_config, cleanup_mongodb_connections
+from tools.mongodb_config import get_embedding_manager, get_mongodb_config, cleanup_mongodb_connections
 
 def test_mongodb_connection():
     """Test basic MongoDB connection"""
@@ -151,7 +151,7 @@ def test_project_matcher_integration():
     
     try:
         # Import project_matcher to test the integration
-        import project_matcher
+        import tools.project_matcher as project_matcher
         
         # Test compute_embedding function
         test_messages = ["Create a simple web application", "Build a game with pygame"]
@@ -184,7 +184,7 @@ def main():
     print("=" * 50)
     
     # Check if we're in the right directory
-    if not os.path.exists("mongodb_config.py"):
+    if not os.path.exists("tools/mongodb_config.py"):
         print("❌ Please run this script from the Kettle AI root directory")
         sys.exit(1)
     

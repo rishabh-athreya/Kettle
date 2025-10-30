@@ -5,8 +5,8 @@ from datetime import datetime
 from utils.keys import ANTHROPIC_API_KEY
 from utils.prompts import extract_tasks_prompt
 import time
-from dependency_analyzer import *
-import research_processor
+from tools.dependency_analyzer import create_dependency_matrix
+import tools.research_processor as research_processor
 
 # Use the modern messages endpoint
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
@@ -369,79 +369,30 @@ def extract_valid_tasks_json(response: str):
 # Real Slack fetch - read from saved messages
 def fetch_messages():
     try:
-        with open("json/messages.json", "r") as f:
-            data = json.load(f)
-            messages = data.get("messages", [])
-            
-        # Get the last processed timestamp for tasks
-        last_task_ts = 0
-        try:
-            with open("json/last_task_processed_ts.txt", "r") as f:
-                last_task_ts = float(f.read().strip())
-        except (FileNotFoundError, ValueError):
-            pass
+        # Prefer a batch snapshot if present (created when silence window is met)
+        messages = []
+        batch_path = "json/batch.json"
+        if os.path.exists(batch_path):
+            try:
+                with open(batch_path, "r") as bf:
+                    data = json.load(bf)
+                    messages = data.get("messages", [])
+            except (IOError, json.JSONDecodeError):
+                messages = []
+        else:
+            try:
+                with open("json/messages.json", "r") as f:
+                    data = json.load(f)
+                    messages = data.get("messages", [])
+            except (IOError, json.JSONDecodeError):
+                messages = []
         
-        # Check if we have any existing tasks
-        try:
-            with open("json/phased_tasks.json", "r") as f:
-                existing_tasks = json.load(f)
-                has_existing_tasks = len(existing_tasks) > 0
-        except (FileNotFoundError, json.JSONDecodeError):
-            has_existing_tasks = False
-        
-        # Check if the latest message is a modification request
-        is_modification_request = False
+        # Default: process the entire current batch of messages
         if messages:
-            latest_message = messages[0].get("text", "").lower()
-            modification_keywords = [
-                "modify", "update", "change", "add to", "enhance", "improve", 
-                "fix", "adjust", "tweak", "refactor", "extend", "expand"
-            ]
-            is_modification_request = any(keyword in latest_message for keyword in modification_keywords)
-        
-        # If no existing tasks, process all messages
-        if not has_existing_tasks:
-            print(f"Processing all {len(messages)} messages for initial task extraction")
-            # Update the timestamp to the latest message processed
-            if messages:
-                latest_ts = max(float(msg.get("ts", 0)) for msg in messages)
-                with open("json/last_task_processed_ts.txt", "w") as f:
-                    f.write(str(latest_ts))
-            return [msg.get("text", "") for msg in messages if msg.get("text", "").strip()]
-        
-        # If it's a modification request, process all recent messages (last 5)
-        if is_modification_request:
-            print(f"🔧 Modification request detected! Processing recent messages for task updates")
-            recent_messages = messages[:5]  # Get last 5 messages
-            message_texts = [msg.get("text", "") for msg in recent_messages if msg.get("text", "").strip()]
-            
-            # Clear existing tasks to make room for new modification tasks
-            print("🗑️  Clearing existing tasks for modification...")
-            with open("json/phased_tasks.json", "w") as f:
-                json.dump([], f, indent=2)
-            
-            # Update the timestamp to the latest message processed
-            if messages:
-                latest_ts = max(float(msg.get("ts", 0)) for msg in messages)
-                with open("json/last_task_processed_ts.txt", "w") as f:
-                    f.write(str(latest_ts))
-            
-            return message_texts
-        
-        # Only process messages newer than the last task extraction (normal flow)
-        new_messages = []
-        for msg in messages:
-            msg_ts = float(msg.get("ts", 0))
-            if msg_ts > last_task_ts:
-                new_messages.append(msg.get("text", ""))
-        
-        if new_messages:
-            print(f"Processing {len(new_messages)} new messages for task extraction")
-            # Update the timestamp to the latest message processed
             latest_ts = max(float(msg.get("ts", 0)) for msg in messages)
             with open("json/last_task_processed_ts.txt", "w") as f:
                 f.write(str(latest_ts))
-            return new_messages
+            return [msg.get("text", "") for msg in messages if msg.get("text", "").strip()]
         else:
             print("No new messages for task extraction")
             return []
@@ -510,29 +461,12 @@ def main():
         print("No messages to process for task extraction")
         return
     
-    # Check if this is a modification request
-    is_modification = any(keyword in " ".join(messages).lower() for keyword in [
-        "modify", "update", "change", "add to", "enhance", "improve", 
-        "fix", "adjust", "tweak", "refactor", "extend", "expand"
-    ])
-    
-    if is_modification:
-        print("🔧 Processing modification request...")
-        print(f"📝 Messages: {messages}")
-    else:
-        print("🆕 Processing new project request...")
-    
     # Create hierarchical tasks (like Desktop/Kettle)
     print("🔍 Creating hierarchical tasks...")
     hierarchical_tasks = create_hierarchical_tasks(messages)
     
     # Save hierarchical tasks in the correct structure
     save_hierarchical_tasks(hierarchical_tasks)
-    
-    if is_modification:
-        print("✅ Modification tasks extracted and ready for execution")
-    else:
-        print("✅ Task extraction and categorization complete")
     
     # Run dependency analysis on the extracted tasks
     print("🔍 Running dependency analysis...")
@@ -558,11 +492,6 @@ def main():
             print(f"⚠️  Could not generate research media: {e}")
     else:
         print("📝 No research tasks found - skipping media generation")
-    
-    if is_modification:
-        print("✅ Modification processing complete - new tasks ready in dashboard")
-    else:
-        print("✅ Task extraction, categorization, dependency analysis, and research processing complete")
 
 
 if __name__ == "__main__":

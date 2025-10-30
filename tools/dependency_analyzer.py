@@ -26,34 +26,34 @@ ANALYSIS INSTRUCTIONS:
 
 RESPONSE FORMAT:
 Return ONLY a JSON object with this exact structure:
-{{
-  "dependencies": {{
+{
+  "dependencies": {
     "task_id_1": ["task_id_2", "task_id_3"],
     "task_id_2": ["task_id_4"],
     "task_id_3": [],
     ...
-  }},
-  "explanations": {{
+  },
+  "explanations": {
     "task_id_1": "This task depends on task_id_2 because... and task_id_3 because...",
     "task_id_2": "This task depends on task_id_4 because...",
     ...
-  }}
-}}
+  }
+}
 
 Where task_id_X corresponds to the task number (1, 2, 3, etc.) from the list above.
 
 EXAMPLE:
 If Task 1 is "Set up project structure" and Task 2 is "Install dependencies", then Task 2 might depend on Task 1:
-{{
-  "dependencies": {{
+{
+  "dependencies": {
     "1": [],
     "2": ["1"]
-  }},
-  "explanations": {{
+  },
+  "explanations": {
     "1": "No dependencies - this is a foundational task",
     "2": "Depends on task 1 because dependencies should be installed after project structure is set up"
-  }}
-}}
+  }
+}
 
 Analyze the tasks and provide the dependency matrix:
 """
@@ -186,4 +186,4 @@ def main():
         print(f"Error in dependency analysis: {e}")
 
 if __name__ == "__main__":
-    main() 
+    main()

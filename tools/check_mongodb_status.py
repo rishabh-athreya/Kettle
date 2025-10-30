@@ -4,10 +4,9 @@ MongoDB Status Checker for Kettle AI
 Check the current state of your MongoDB database anytime.
 """
 
-import os
 import sys
 from datetime import datetime
-from mongodb_config import get_embedding_manager, get_mongodb_config, cleanup_mongodb_connections
+from tools.mongodb_config import get_embedding_manager, get_mongodb_config, cleanup_mongodb_connections
 
 def check_mongodb_connection():
     """Check if MongoDB is accessible"""
@@ -15,11 +14,11 @@ def check_mongodb_connection():
         config = get_mongodb_config()
         # Test the connection
         config.database.command('ping')
-        print("✅ MongoDB connection successful")
+        print("MongoDB connection successful")
         return True
     except Exception as e:
-        print(f"❌ MongoDB connection failed: {e}")
-        print("💡 Make sure MongoDB is running: brew services start mongodb/brew/mongodb-community")
+        print(f"MongoDB connection failed: {e}")
+        print("Make sure MongoDB is running: brew services start mongodb/brew/mongodb-community")
         return False
 
 def show_database_stats():
@@ -27,7 +26,7 @@ def show_database_stats():
     try:
         embedding_manager = get_embedding_manager()
         
-        print("\n📊 Database Statistics")
+        print("Database Statistics")
         print("=" * 40)
         
         # Get basic stats
@@ -49,7 +48,7 @@ def show_database_stats():
         return True
         
     except Exception as e:
-        print(f"❌ Error getting database stats: {e}")
+        print(f"Error getting database stats: {e}")
         return False
 
 def list_recent_projects(limit=10):
@@ -57,7 +56,7 @@ def list_recent_projects(limit=10):
     try:
         embedding_manager = get_embedding_manager()
         
-        print(f"\n📋 Recent Projects (last {limit})")
+        print(f"Recent Projects (last {limit})")
         print("=" * 40)
         
         projects = embedding_manager.get_all_projects(limit=limit)
@@ -85,7 +84,7 @@ def list_recent_projects(limit=10):
         return True
         
     except Exception as e:
-        print(f"❌ Error listing projects: {e}")
+        print(f"Error listing projects: {e}")
         return False
 
 def search_projects(query=None, project_type=None):
@@ -93,7 +92,7 @@ def search_projects(query=None, project_type=None):
     try:
         embedding_manager = get_embedding_manager()
         
-        print(f"\n🔍 Project Search")
+        print(f"Project Search")
         print("=" * 40)
         
         if query:
@@ -124,7 +123,7 @@ def search_projects(query=None, project_type=None):
         return True
         
     except Exception as e:
-        print(f"❌ Error searching projects: {e}")
+        print(f"Error searching projects: {e}")
         return False
 
 def show_database_info():
@@ -132,7 +131,7 @@ def show_database_info():
     try:
         config = get_mongodb_config()
         
-        print("\n🔧 Database Configuration")
+        print("\nDatabase Configuration")
         print("=" * 40)
         print(f"Connection string: {config.connection_string}")
         print(f"Database name: {config.database_name}")
@@ -142,12 +141,12 @@ def show_database_info():
         return True
         
     except Exception as e:
-        print(f"❌ Error getting database info: {e}")
+        print(f"Error getting database info: {e}")
         return False
 
 def main():
     """Main status check function"""
-    print("🔍 Kettle AI - MongoDB Status Checker")
+    print("Kettle AI - MongoDB Status Checker")
     print("=" * 50)
     
     # Check connection
@@ -172,8 +171,8 @@ def main():
         project_type = sys.argv[2]
         search_projects(project_type=project_type)
     
-    print("\n✅ Status check complete!")
-    print("💡 Use 'python check_mongodb_status.py [search_term] [project_type]' for searches")
+    print("Status check complete!")
+    print("Use 'python tools/check_mongodb_status.py [search_term] [project_type]' for searches")
     
     # Cleanup
     cleanup_mongodb_connections()

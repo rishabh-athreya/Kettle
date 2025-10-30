@@ -7,7 +7,7 @@ from utils.keys import ANTHROPIC_API_KEY
 import tempfile
 import requests
 from utils.prompts import execute_tasks_prompt, modify_existing_file_prompt
-from project_matcher import *
+import tools.project_matcher as project_matcher
 
 PHASE_ORDER = ["project_setup", "dependency_installation", "feature_implementation"]
 
@@ -318,7 +318,8 @@ def generate_script_for_existing_project(ordered_tasks, existing_project_folder,
         "        'messages': [{'role': 'user', 'content': prompt}],",
         "        'temperature': 0.1  # Lower temperature for more consistent modifications",
         "    }",
-        "    response = requests.post(ANTHROPIC_API_URL, headers=headers, json=body)",
+        "    response = requests.post(ANTHROPIC_API_URL, headers=headers, json=body)
+",
         "    response.raise_for_status()",
         "    return response.json()['content'][0]['text']",
         "",
@@ -333,7 +334,7 @@ def generate_script_for_existing_project(ordered_tasks, existing_project_folder,
         "    prompt = f'''You are modifying an existing file: {file_path}",
         "",
         "**TASK TO IMPLEMENT:**",
-        f"{task_description}",
+        f"{''}",
         "",
         "**EXISTING FILE CONTENT:**",
         "```",
@@ -433,6 +434,19 @@ def main(existing_project_folder=None):
     
     # Sort tasks by phase
     ordered_tasks = sort_tasks_by_phase(flat_tasks)
+
+    # If no explicit folder was provided, try to select the closest existing project by embeddings
+    if existing_project_folder is None:
+        try:
+            query_messages = [t.get('task', '') for t in ordered_tasks if t.get('task')]
+            closest_project, similarity = project_matcher.find_closest_project(query_messages)
+            if closest_project:
+                print(f"🔎 Found closest existing project: {closest_project} (sim={similarity:.2f})")
+                existing_project_folder = closest_project
+            else:
+                print("🔎 No sufficiently similar existing project found; creating a new one")
+        except Exception as e:
+            print(f"[WARN] Embedding-based project selection failed: {e}")
     
     # If we have an existing project folder, use specialized modification approach
     if existing_project_folder:
@@ -441,12 +455,10 @@ def main(existing_project_folder=None):
         
         # Use specialized script for existing projects
         script = generate_script_for_existing_project(ordered_tasks, existing_project_folder, codebase)
-        project_folder = existing_project_folder
     else:
         # Use regular prompt for new projects
         prompt = execute_tasks_prompt(ordered_tasks)
         script = clean_code_blocks(call_claude(prompt))
-        project_folder = None
 
     validate_script(script)
     script = inject_dependencies_if_missing(script)
@@ -465,7 +477,7 @@ def main(existing_project_folder=None):
                         # Look for project_name assignment
                         for name_line in script.split('\n'):
                             if 'project_name' in name_line and '=' in name_line:
-                                project_name = name_line.split('=')[1].strip().strip('"\'')
+                                project_name = name_line.split('=')[1].strip().strip("\"'")
                                 actual_project_folder = os.path.expanduser(f"~/Desktop/Work/{project_name}")
                                 break
                     else:
@@ -491,4 +503,4 @@ def main(existing_project_folder=None):
         print("[WARN] Could not determine actual project folder for embedding")
 
 if __name__ == "__main__":
-    main() 
+    main()
